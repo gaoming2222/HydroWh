@@ -51,12 +51,21 @@ namespace Protocol.Data.GY
             upEventArgs = new UpEventArgs();
             downEventArgs = new DownEventArgs();
 
+            ret = new Dictionary<string, string>();
+            retList = new List<Dictionary<string, string>>();
+
         }
         #endregion 构造函数
 
         public Dictionary<string,Object> getHandledData(CRouter router,string ascOrASCII)
         {
             Dictionary<string, object> resMap = new Dictionary<string, object>();
+           
+            retList.Clear();
+            sendOrRecvMsgEventArgsList.Clear();
+            upEventArgsList.Clear();
+
+
             resMap["isTru"] = null;
             #region 处理16进制的规约报文
             if (ascOrASCII == "Hex")
@@ -197,86 +206,97 @@ namespace Protocol.Data.GY
                     }
                 }
                 string gprsid = string.Empty;
-                string messageStr = System.Text.Encoding.ASCII.GetString(dataByteList);
-                if (messageStr.Contains("\u0001") && messageStr.Contains("\u0002") && messageStr.Contains("\u0003"))
+                try
                 {
-                    string[] messageList = Regex.Split(messageStr, "\u0001", RegexOptions.IgnoreCase);
-                    for (int i = 0; i < messageList.Length; i++)
+                    string messageStr = System.Text.Encoding.ASCII.GetString(dataByteList);
+                    if (messageStr.Contains("\u0001") && messageStr.Contains("\u0002") && messageStr.Contains("\u0003"))
                     {
-                        string ondData = messageList[i];
-                        //范例报文 00 0011223344 1234 30 004D 0787 181218192911 ST 0011223344 H TT 1812181925 PJ 0.0 PT 3.5 Z 1.234 VT 12.29 4F49
-                        if (ondData.Contains("\u0002") && ondData.Contains("\u0003"))
+                        string[] messageList = Regex.Split(messageStr, "\u0001", RegexOptions.IgnoreCase);
+                        for (int i = 0; i < messageList.Length; i++)
                         {
-                            string[]   oneDataList = Regex.Split(messageStr, "\u0002", RegexOptions.IgnoreCase);
-                            if(oneDataList.Length == 2)
+                            string ondData = messageList[i];
+                            //范例报文 00 0011223344 1234 30 004D 0787 181218192911 ST 0011223344 H TT 1812181925 PJ 0.0 PT 3.5 Z 1.234 VT 12.29 4F49
+                            if (ondData.Contains("\u0002") && ondData.Contains("\u0003"))
                             {
-                                string header = oneDataList[0];
-                                string funcCode = header.Substring(12, 2);
-                                string body = oneDataList[1];
-                                if (funcCode == "30" || funcCode == "31" || funcCode == "32" || funcCode == "33" || funcCode == "34" || funcCode == "35")
+                                string[] oneDataList = Regex.Split(ondData, "\u0002", RegexOptions.IgnoreCase);
+                                if (oneDataList.Length == 2)
                                 {
-                                    #region 根据header的内容进行回复 000011223344123430004D
-                                    string meaageFlag = messageStr.Substring(0, 1);
-                                    string stationAddr = header.Substring(2, 10);
-                                    string centerAddr = data.Substring(0, 2);
-                                    string passAndFunc = data.Substring(12, 6);
-                                    int dataLength = 16;
-                                    string length = Convert.ToString(dataLength, 16);
-                                    string flag = "8" + "0" + length;
-                                    string serialNumber = body.Substring(0, 4);
-                                    string time = body.Substring(4, 12);
-                                    string dataMessage = meaageFlag + centerAddr + stationAddr + passAndFunc + flag + "02" + serialNumber + time + "03";
-                                    string CRCMessage = CRC.ToCRC16(dataMessage, false);
-                                    string downMessage = dataMessage + CRCMessage;
-                                    ret[stationAddr] = downMessage;
-                                    retList.Add(new Dictionary<string, string>(ret)); //深拷贝进行赋值，防止后续clear后值不存在
-                                    ret.Clear();
-                                    #endregion
-                                }
-                                string[] bodyList = Regex.Split(messageStr, "\u0003", RegexOptions.IgnoreCase);
-                                if(bodyList.Length == 2)
-                                {
-                                    string dataGram = bodyList[0];
-                                    string check = bodyList[1];
-                                    if(check.Length != 4)
+                                    string header = oneDataList[0];
+                                    string funcCode = header.Substring(16, 2);
+                                    string body = oneDataList[1];
+                                    if (funcCode == "30" || funcCode == "31" || funcCode == "32" || funcCode == "33" || funcCode == "34" || funcCode == "35")
                                     {
-                                        Debug.WriteLine("校验位错误：" + ondData);
-                                        return null;
+                                        #region 根据header的内容进行回复 000011223344123430004D
+                                        string meaageFlag = messageStr.Substring(0, 1);
+                                        string stationAddr = header.Substring(2, 10);
+                                        string centerAddr = header.Substring(0, 2);
+                                        string passAndFunc = header.Substring(12, 6);
+                                        int dataLength = 16;
+                                        string length = Convert.ToString(dataLength, 16);
+                                        string flag = "1" + "0" + length;
+                                        string serialNumber = body.Substring(0, 4);
+                                        string time = body.Substring(4, 12);
+                                        string dataMessage = meaageFlag + centerAddr + stationAddr + passAndFunc + flag + "\u0002" + serialNumber + time + "\u0003";
+                                        string CRCMessage = CRC.ToCRC16(dataMessage, false);
+                                        string downMessage = dataMessage + CRCMessage;
+                                        ret[router.sessionid] = downMessage;
+                                        retList.Add(new Dictionary<string, string>(ret)); //深拷贝进行赋值，防止后续clear后值不存在
+                                        ret.Clear();
+                                        #endregion
                                     }
-                                    upParser.Parse(ondData, out report);
-                                    string rtype = "";
-                                    switch (report.ReportType)
+                                    string[] bodyList = Regex.Split(messageStr, "\u0003", RegexOptions.IgnoreCase);
+                                    if (bodyList.Length == 2)
                                     {
-                                        case EMessageType.EUinform:
-                                            rtype = "均匀时段报";
-                                            break;
-                                        case EMessageType.EAdditional:
-                                            rtype = "加报";
-                                            break;
-                                        case EMessageType.ETimed:
-                                            rtype = "定时报";
-                                            break;
-                                        case EMessageType.EHour:
-                                            rtype = "小时报";
-                                            break;
-                                    }
-                                    sendOrRecvMsgEventArgs.Msg = String.Format("{0,-10}   ", rtype) + ondData;
-                                    Debug.WriteLine(ondData);
-                                    sendOrRecvMsgEventArgs.Description = "接收";
-                                    sendOrRecvMsgEventArgsList.Add(sendOrRecvMsgEventArgs);
+                                        string dataGram = bodyList[0];
+                                        string check = bodyList[1];
+                                        if (check.Length != 4)
+                                        {
+                                            Debug.WriteLine("校验位错误：" + ondData);
+                                            return null;
+                                        }
+                                        upParser.Parse(ondData, out report);
+                                        string rtype = "";
+                                        switch (report.ReportType)
+                                        {
+                                            case EMessageType.EUinform:
+                                                rtype = "均匀时段报";
+                                                break;
+                                            case EMessageType.EAdditional:
+                                                rtype = "加报";
+                                                break;
+                                            case EMessageType.ETimed:
+                                                rtype = "定时报";
+                                                break;
+                                            case EMessageType.EHour:
+                                                rtype = "小时报";
+                                                break;
+                                            case EMessageType.ETest:
+                                                rtype = "测试报";
+                                                break;
+                                        }
+                                        sendOrRecvMsgEventArgs.Msg = String.Format("{0,-10}   ", rtype) + ondData;
+                                        Debug.WriteLine(ondData);
+                                        sendOrRecvMsgEventArgs.Description = "接收";
+                                        sendOrRecvMsgEventArgsList.Add(sendOrRecvMsgEventArgs);
 
-                                    upEventArgs.Value = report;
-                                    upEventArgs.RawData = ondData;
-                                    upEventArgsList.Add(upEventArgs);
+                                        upEventArgs.Value = report;
+                                        upEventArgs.RawData = ondData;
+                                        upEventArgsList.Add(upEventArgs);
+                                    }
                                 }
                             }
                         }
                     }
+                    else
+                    {
+                        return null;
+                    }
                 }
-                else
+                catch(Exception e)
                 {
-                    return null;
+
                 }
+                
 
                 }
 

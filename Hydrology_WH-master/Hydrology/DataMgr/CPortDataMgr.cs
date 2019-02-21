@@ -2328,20 +2328,25 @@ namespace Hydrology.DataMgr
         /// </summary>
         public static void UpDataReceived(object sender, UpEventArgs e)
         {
-
-            //Console.WriteLine("..." + Decimal.Parse("111111") * (Decimal)0.01);
             CReportStruct report = e.Value;
-
-            string dbId = CDBDataMgr.Instance.GetComFlagById(report.Stationid, report.ChannelType);
-            if (dbId != report.flagId)
+            string dbId = string.Empty;
+            if (report.Stationid.Length == 8)
             {
-                if (report.ChannelType == EChannelType.GPRS || report.ChannelType == EChannelType.GSM || report.ChannelType == EChannelType.Beidou500)
+                dbId = CDBDataMgr.Instance.QueryStationNameByUserID(report.Stationid);
+                report.Stationid = dbId;
+            }
+            else
+            {
+                dbId = CDBDataMgr.Instance.GetComFlagById(report.Stationid, report.ChannelType);
+                if (dbId != report.flagId)
                 {
-                    CSystemInfoMgr.Instance.AddInfo("接收Beidou卫星终端号" + report.flagId.ToString() + "数据库存储卫星终端号" + dbId + "不对应！");
-                    return;
+                    if (report.ChannelType == EChannelType.GPRS || report.ChannelType == EChannelType.GSM || report.ChannelType == EChannelType.Beidou500)
+                    {
+                        CSystemInfoMgr.Instance.AddInfo("接收Beidou卫星终端号" + report.flagId.ToString() + "数据库存储卫星终端号" + dbId + "不对应！");
+                        return;
+                    }
                 }
             }
-
             //gm 0331
             string str = e.RawData;
             if (str.Contains("1G21") || str.Contains("1G22"))
@@ -2530,6 +2535,7 @@ namespace Hydrology.DataMgr
                         {
                             WaterStage = item.Water,
                             TotalRain = item.Rain,
+                            DiffRain = item.DiffRain,
                             Voltage = item.Voltge,
                             DataTime = item.Time
                         });

@@ -24,7 +24,7 @@ namespace Hydrology.Entity
         /// <summary>
         /// 电压值
         /// </summary>
-        public Decimal Voltage { get; set; }
+        public Nullable<Decimal> Voltage { get; set; }
         /// 系统接收数据的时间
         /// </summary>
         public DateTime TimeRecieved { get; set; }

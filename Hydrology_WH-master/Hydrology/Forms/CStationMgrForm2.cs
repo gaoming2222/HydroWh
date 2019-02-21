@@ -73,6 +73,7 @@ namespace Hydrology.Forms
                 cmb_StationType.Items.Add(CEnumHelper.StationTypeToUIStr(EStationType.ERainFall));
                 cmb_StationType.Items.Add(CEnumHelper.StationTypeToUIStr(EStationType.ERiverWater));
                 cmb_StationType.Items.Add(CEnumHelper.StationTypeToUIStr(EStationType.EHydrology));
+                cmb_StationType.Items.Add(CEnumHelper.StationTypeToUIStr(EStationType.EH));
                 // 初始化雨量精度
 
                 cmb_RainAccuracy.Items.Add("0.1");
@@ -303,10 +304,10 @@ namespace Hydrology.Forms
                     MessageBox.Show("测站编号不能为空");
                     return false;
                 }
-                // 判断测站编号是否为4位数字
-                if (stationId.Length != 4)
+                // 测站编号不能超过10位
+                if (stationId.Length > 10)
                 {
-                    MessageBox.Show("请输入正确的4位测站编号");
+                    MessageBox.Show("测站编码不能超过10位");
                     return false;
                 }
 
@@ -384,9 +385,9 @@ namespace Hydrology.Forms
                     }
                 }
 
-                if (System.Text.Encoding.Default.GetByteCount(stationId) > 4)
+                if (System.Text.Encoding.Default.GetByteCount(stationId) > 10)
                 {
-                    MessageBox.Show("测站ID字符数不能超过4个");
+                    MessageBox.Show("测站ID字符数不能超过10个");
                     return false;
                 }
 

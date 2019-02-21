@@ -24,6 +24,8 @@ namespace Entity.Protocol.Channel
 
         public string dutid { get; set; }
 
+        public string sessionid { get; set; }
+
         public string data { get; set; }
 
         public byte[] rawData { get; set; }

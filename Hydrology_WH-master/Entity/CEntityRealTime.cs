@@ -63,7 +63,7 @@ namespace Hydrology.Entity
 
         // 电压
         [XmlElement("voltage")]
-        public Decimal Dvoltage { get; set; }
+        public Nullable<Decimal> Dvoltage { get; set; }
 
         // 接收时间
         [XmlElement("timerecv")]

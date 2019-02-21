@@ -171,9 +171,14 @@ namespace Hydrology.Entity
         public Nullable<Decimal> TotalRain;
 
         /// <summary>
+        /// 流量，仪器读取，需要计算，才能得到有用数值
+        /// </summary>
+        public Nullable<Decimal> DiffRain;
+
+        /// <summary>
         /// 电压
         /// </summary>
-        public Decimal Voltage;
+        public Nullable<Decimal> Voltage;
 
         /// <summary>
         /// 采集时间

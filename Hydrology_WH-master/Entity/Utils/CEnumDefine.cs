@@ -31,7 +31,9 @@ namespace Hydrology.Entity
         ESoil = 3,         //  04墒情站
         ESoilRain = 4,     //  05墒情雨量站
         ESoilWater = 5,     //  06，16墒情水位站
-        ESoilHydrology = 6  //  07，17墒情水文站
+        ESoilHydrology = 6, //  07，17墒情水文站
+        EH = 7 //河道站
+            
     }
 
     public enum EStationTypeProto
@@ -100,7 +102,8 @@ namespace Hydrology.Entity
         VHF,
         //  仅用于记录日志
         BeidouNormal,
-        Beidou500
+        Beidou500,
+        TCP = 16
     };
 
     /// <summary>
@@ -315,10 +318,12 @@ namespace Hydrology.Entity
         public static readonly string CS_EChannelType_None_DBStr = "0";
         public static readonly string CS_EChannelType_None_UIStr = "无";
         public static readonly string CS_EChannelType_GPRS_DBStr = "3";
+        public static readonly string CS_EChannelType_TCP_DBStr = "16";
         public static readonly string CS_EChannelType_Beidou_DBStr = "15";
         public static readonly string CS_EChannelType_GSM_DBStr = "16";
         public static readonly string CS_EChannelType_PSTN_DBStr = "17";
         public static readonly string CS_EChannelType_GPRS_UIStr = "GPRS";
+        public static readonly string CS_EChannelType_TCP_UIStr = "TCP";
         public static readonly string CS_EChannelType_Beidou_UIStr = "北斗";
         public static readonly string CS_EChannelType_GSM_UIStr = "GSM";
         public static readonly string CS_EChannelType_PSTN_UIStr = "PSTN";
@@ -331,6 +336,7 @@ namespace Hydrology.Entity
                 case EChannelType.GSM: { return CS_EChannelType_GSM_DBStr; }
                 case EChannelType.PSTN: { return CS_EChannelType_PSTN_DBStr; }
                 case EChannelType.None: { return CS_EChannelType_None_DBStr; }
+                case EChannelType.TCP: { return CS_EChannelType_TCP_DBStr; }
             }
             throw new Exception("ChannelTypeToDBStr Error");
         }
@@ -344,6 +350,7 @@ namespace Hydrology.Entity
                 case EChannelType.GSM: { return CS_EChannelType_GSM_UIStr; }
                 case EChannelType.PSTN: { return CS_EChannelType_PSTN_UIStr; }
                 case EChannelType.None: { return CS_EChannelType_None_UIStr; }
+                case EChannelType.TCP: { return CS_EChannelType_TCP_UIStr; }
             }
             throw new Exception("ChannelTypeToUIStr Error");
         }
@@ -354,6 +361,10 @@ namespace Hydrology.Entity
             if (type.Equals(CS_EChannelType_GPRS_DBStr))
             {
                 return EChannelType.GPRS;
+            }
+            else if (type.Equals(CS_EChannelType_TCP_DBStr))
+            {
+                return EChannelType.TCP;
             }
             else if (type.Equals(CS_EChannelType_Beidou_DBStr))
             {
@@ -379,6 +390,10 @@ namespace Hydrology.Entity
             if (str.Equals(CS_EChannelType_GPRS_UIStr))
             {
                 return EChannelType.GPRS;
+            }
+            else if (str.Equals(CS_EChannelType_TCP_UIStr))
+            {
+                return EChannelType.TCP;
             }
             else if (str.Equals(CS_EChannelType_Beidou_UIStr))
             {
@@ -422,6 +437,9 @@ namespace Hydrology.Entity
         public static readonly string CS_EStationType_ESoilHydrology_UIStr = "墒情水文站";
         public static readonly string CS_EStationType_ESoilHydrology_DBStr = "6";
 
+        public static readonly string CS_EStationType_RiverHydro_UIStr = "河道站";
+        public static readonly string CS_EStationType_RiverHydro_DBStr = "7";
+
         //        ESoil = 3,         //  04墒情站
         //ESoilRain = 4,     //  05墒情雨量站
         //ESoilWater = 5,     //  06，16墒情水位站
@@ -439,6 +457,7 @@ namespace Hydrology.Entity
                 case EStationType.ESoilRain: { result = CS_EStationType_ESoilRain_UIStr; } break;
                 case EStationType.ESoilWater: { result = CS_EStationType_ESoilWater_UIStr; } break;
                 case EStationType.ESoilHydrology: { result = CS_EStationType_ESoilHydrology_UIStr; } break;
+                case EStationType.EH: { result = CS_EStationType_RiverHydro_UIStr; } break;
                 default: { result = "未知站点类型"; } break;
             }
             return result;
@@ -489,6 +508,8 @@ namespace Hydrology.Entity
                 return EStationType.ESoilWater;
             else if (type.Equals(CS_EStationType_ESoilHydrology_UIStr))
                 return EStationType.ESoilHydrology;
+            else if (type.Equals(CS_EStationType_RiverHydro_UIStr))
+                return EStationType.EH;
             throw new Exception("UIStrToStationType ERROR");
         }
         public static EStationType DBStrToStationType(string type)
@@ -508,6 +529,8 @@ namespace Hydrology.Entity
                 return EStationType.ESoilWater;
             else if (type.Equals(CS_EStationType_ESoilHydrology_DBStr))
                 return EStationType.ESoilHydrology;
+            else if (type.Equals(CS_EStationType_RiverHydro_DBStr))
+                return EStationType.EH;
             throw new Exception("DBStrToStationType ERROR");
         }
         public static string StationTypeToDBStr(EStationType type)
@@ -521,6 +544,7 @@ namespace Hydrology.Entity
                 case EStationType.ESoilRain: return CS_EStationType_ESoilRain_DBStr;
                 case EStationType.ESoilWater: return CS_EStationType_ESoilWater_DBStr;
                 case EStationType.ESoilHydrology: return CS_EStationType_ESoilHydrology_DBStr;
+                case EStationType.EH: return CS_EStationType_RiverHydro_DBStr;
             }
             throw new Exception("StationTypeToDBStr ERROR");
         }

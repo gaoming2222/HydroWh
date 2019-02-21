@@ -1240,6 +1240,11 @@ namespace Hydrology.DataMgr
         /// <param name="rtdState"></param>
         private void AssertWaterData(CEntityWater water, ref ERTDDataState rtdState, ref int status, bool bNotityWarning = true)
         {
+            if(water.WaterStage == -20000)
+            {
+                status = 1;
+                return;
+            }
 
             // 判断水量信息是否合法，写入系统信息或者告警信息
             CEntityStation station = GetStationById(water.StationID);
@@ -2400,7 +2405,7 @@ namespace Hydrology.DataMgr
                 }
                 // 更新水量表，雨量表以及电压表
                 #region 雨量表
-                if (args.EStationType == EStationType.EHydrology || args.EStationType == EStationType.ERainFall)
+                if ( args.EStationType == EStationType.EH)
                 {
                     List<CEntityRain> rains = new List<CEntityRain>();
                     foreach (CSingleStationData data in args.Datas)
@@ -2412,7 +2417,7 @@ namespace Hydrology.DataMgr
                             continue;
                         }
 
-                        if (data.TotalRain < 0)
+                        if (data.TotalRain < 0 || data.DiffRain == null || data.DiffRain < 0)
                         {
                             continue;
                         }
@@ -2431,8 +2436,8 @@ namespace Hydrology.DataMgr
                         int second = data.DataTime.Second;
                         if (data.TotalRain.HasValue)
                         {
-                            CalDifferenceRain(station.DRainAccuracy, data.TotalRain.Value, data.DataTime, station.LastTotalRain, station.DRainChange, ref status, ref tmpDifferenceRain);
-                            station.LastTotalRain = data.TotalRain.Value * (decimal)station.DRainAccuracy;
+                            CalDifferenceRain(1, data.TotalRain.Value, data.DataTime, station.LastTotalRain, station.DRainChange, ref status, ref tmpDifferenceRain);
+                            station.LastTotalRain = data.TotalRain.Value * 1;
                         }
                         if (status == 0)
                         {
@@ -2484,19 +2489,19 @@ namespace Hydrology.DataMgr
                         rain.TimeRecieved = args.RecvDataTime;
                         rain.PeriodRain = (data.DataTime.Minute == 0 && data.DataTime.Second == 0) ? tmpPeriodRain : null;
                         rain.DayRain = (data.DataTime.Hour == 8 && data.DataTime.Minute == 0) ? tmpDayRain : null;
-                        rain.DifferneceRain = tmpDifferenceRain;
-                        rain.TotalRain = data.TotalRain * (Decimal)station.DRainAccuracy;
+                        if(data.DiffRain != null && data.DiffRain > 0)
+                        {
+                            rain.DifferneceRain = data.DiffRain;
+                        }
+                        else
+                        {
+                            rain.DifferneceRain = tmpDifferenceRain;
+                        }
+                        
+                        rain.TotalRain = data.TotalRain * 1;
                         rain.MessageType = args.EMessageType;
                         rain.ChannelType = args.EChannelType;
                         AssertAndAdjustRainData(rain, ref tmpRTDRainDataState);
-                        //if (status == 1)
-                        //{
-                        //    rain.BState = 1;
-                        //}else
-                        //{
-                        //   rain.BState = 0;
-                        // }
-                        //rain.BState = 1;
                         rain.DifferneceRain = rain.DifferneceRain.HasValue ? (rain.DifferneceRain < 0 ? 0 : rain.DifferneceRain) : null;
                         rain.TotalRain = rain.TotalRain.HasValue ? (rain.TotalRain < 0 ? 0 : rain.TotalRain) : null;
                         rain.DayRain = rain.DayRain.HasValue ? (rain.DayRain < 0 ? 0 : rain.DayRain) : null;
@@ -2506,12 +2511,8 @@ namespace Hydrology.DataMgr
                         station.LastTotalRain = rain.TotalRain;
                         // 如果时间设置的误差范围内
                         int offset = (data.DataTime.Hour - 8) * 60 + data.DataTime.Minute;
-                        //if (Math.Abs(offset) <= m_iMinutesRange)
-                        //{
-                        //    station.LastDayTime = data.DataTime;
-                        //    station.LastDayTotalRain = rain.TotalRain;
-                        //}
                     }
+                    //interfaceHelper.Instance.insertRainList(rains);
                     m_proxyRain.AddNewRows(rains); //写入数据库
                                                    //NewTask(() => { foreach (CEntityRain rain in rains) { AssertRainData(rain); } });
                                                    //foreach (CEntityRain rain in rains) { AssertRainData(rain, ref tmpRTDDataState); }
@@ -2522,7 +2523,7 @@ namespace Hydrology.DataMgr
                 #endregion 雨量表
 
                 #region 水位表
-                if (args.EStationType == EStationType.EHydrology || args.EStationType == EStationType.ERiverWater)
+                if (args.EStationType == EStationType.EH)
                 {
                     List<CEntityWater> listWater = new List<CEntityWater>();
                     foreach (CSingleStationData data in args.Datas)
@@ -2621,7 +2622,7 @@ namespace Hydrology.DataMgr
                     realtime.Dvoltage = args.Datas[tmpDataCount - 1].Voltage;   //电压
                 }
                 realtime.TimeDeviceGained = args.Datas[tmpDataCount - 1].DataTime; //采集时间
-                if (realtime.EIStationType == EStationType.ERainFall || realtime.EIStationType == EStationType.EHydrology)
+                if (realtime.EIStationType == EStationType.EH)
                 {
                     if (args.Datas[tmpDataCount - 1].TotalRain > 0)
                     {
@@ -2698,7 +2699,7 @@ namespace Hydrology.DataMgr
                         realtime.DDayRainFall = null;
                     }
                 }
-                if (realtime.EIStationType == EStationType.ERiverWater || realtime.EIStationType == EStationType.EHydrology)
+                if (realtime.EIStationType == EStationType.EH || realtime.EIStationType == EStationType.EHydrology)
                 {
                     if (args.Datas[tmpDataCount - 1].WaterStage != -200 && args.Datas[tmpDataCount - 1].WaterStage != -20000)
                     {
@@ -3088,6 +3089,24 @@ namespace Hydrology.DataMgr
 
         }
 
+        public  string QueryStationNameByUserID(string uid)
+        {
+            //string uid = ((uint)dtu.m_modemId).ToString("X").PadLeft(8, '0');
+            //string uid = dtu.m_modemId.ToString();
+            if (this.m_listStations != null)
+            {
+                foreach (var station in this.m_listStations)
+                {
+                    if (station.GPRS.Trim() == uid.Trim())
+                    {
+                        return station.StationID;
+                    }
+                }
+
+            }
+            return "";
+        }
+
         #endregion
 
 
@@ -3348,5 +3367,7 @@ namespace Hydrology.DataMgr
         }
 
         #endregion
+
+
     } // end of class
 }

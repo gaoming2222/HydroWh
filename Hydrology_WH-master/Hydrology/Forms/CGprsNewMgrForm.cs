@@ -1,17 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 using Hydrology.CControls;
 using Protocol.Channel.Interface;
 using Hydrology.DataMgr;
 using Hydrology.Entity;
 using System.Threading;
-using Hydrology.DBManager;
 
 namespace Hydrology.Forms
 {

@@ -244,7 +244,7 @@ namespace Protocol.Channel.Transparen
 
 
         public TransparenDll() {
-            onlineTimer= new System.Timers.Timer(60000);
+            onlineTimer= new System.Timers.Timer(5000);
             m_channelType = EChannelType.None;
             cores = System.Environment.ProcessorCount;
             channel2Data = new Channle2Data();
@@ -459,10 +459,37 @@ namespace Protocol.Channel.Transparen
             bool sendSuccess = false;
 
             TSession session = null;
-            lock (_sessionTable)
+            try
             {
-                session = (TSession)_sessionTable[sessionID];
+                foreach (int key in _sessionTable.Keys)
+                {
+                    uint a = (uint)key;
+                    if ((uint)key == sessionID)
+                    {
+                        session = (TSession)_sessionTable[key];
+                    }
+                }
             }
+            catch(Exception e)
+            {
+
+            }
+           
+            if (_sessionTable.ContainsKey(sessionID))
+            {
+                lock (_sessionTable)
+                {
+                    session = (TSession)_sessionTable[sessionID];
+                }
+            }
+            if (_sessionTable.ContainsKey(sessionID.ToString()))
+            {
+                lock (_sessionTable)
+                {
+                    session = (TSession)_sessionTable[sessionID.ToString()];
+                }
+            }
+
 
             if (session != null && session.State == TSessionState.Normal)
             {
@@ -486,7 +513,9 @@ namespace Protocol.Channel.Transparen
                         this.OnClientException();
                     }
                 }
+                InvokeMessage(datagram, "发送");
             }
+
             return sendSuccess;
         }
 
@@ -833,6 +862,7 @@ namespace Protocol.Channel.Transparen
 
         private void EndReceiveData(IAsyncResult iar)  // iar 目标客户端 Session
         {
+
             TSession session = (TSession)iar.AsyncState;
             lock (_sessionTable)
             {
@@ -868,8 +898,16 @@ namespace Protocol.Channel.Transparen
                 }
                 catch  // 读 socket 发生异常，则准备关闭该会话，系统不认为是错误（这种错误可能太多）
                 {
-                    session.ClientSocket.BeginReceive(session.ReceiveBuffer, 0,
+                    try
+                    {
+                        session.ClientSocket.BeginReceive(session.ReceiveBuffer, 0,
                             session.ReceiveBufferLength, SocketFlags.None, EndReceiveData, session);
+                    }
+                    catch(Exception e)
+                    {
+
+                    }
+                    
                     //TODO 需要测试
                     //session.DisconnectType = TDisconnectType.Exception;
                     //session.State = TSessionState.NoReply;
@@ -961,6 +999,7 @@ namespace Protocol.Channel.Transparen
             }
             string gprsid = string.Empty;
             string messageStr = System.Text.Encoding.ASCII.GetString(dataByteList);
+            InvokeMessage(messageStr, "原始数据");
             string data1 = string.Empty;
             if (messageStr.Contains("\u0001") && messageStr.Contains("\u0002") && messageStr.Contains("\u0003"))
             {
@@ -982,7 +1021,7 @@ namespace Protocol.Channel.Transparen
             }
             //if(messageStr.Length > 5)
             string typ = data1.Substring(16, 2);
-            InvokeMessage("  gprs号码:  " + gprsid + String.Format("  {0,-10}   ", typ) + messageStr, "接收");
+            //InvokeMessage("  gprs号码:  " + gprsid + String.Format("  {0,-10}   ", typ) + messageStr, "接收");
 
             //byte转string，如果是ASCII方式 则以此种方式传输
             //string str = System.Text.Encoding.Default.GetString(dataByteList);
@@ -990,6 +1029,7 @@ namespace Protocol.Channel.Transparen
             //数据处理部分 后续可能需要更改  透明传输可能需要站点ID和数据协议的匹配
             CRouter router = new CRouter();
             router.dutid = sessionId.ToString();
+            router.sessionid = sessionId.ToString();
             router.rawData = dataByteList;
             router.dataLength = receivedSize;
             resMap = channel2Data.commonHandle(router, "transparent");
@@ -1006,7 +1046,7 @@ namespace Protocol.Channel.Transparen
                         {
                             //根据Stationid获取sessionid 
                             //TODO
-                            string sessionid = item.Key.Substring(2);
+                            string sessionid = item.Key.ToString();
                             string returnMessage = item.Value;
                             SendData(uint.Parse(sessionid), returnMessage);
                         } 
@@ -1035,13 +1075,13 @@ namespace Protocol.Channel.Transparen
                 {
                     foreach(UpEventArgs upEventArgs in upEventArgsList)
                     {
-                        upEventArgs.Value.ChannelType = EChannelType.None;
-                        upEventArgs.Value.flagId = "0001";
+                        upEventArgs.Value.ChannelType = EChannelType.TCP;
+                        //upEventArgs.Value.flagId = "1234";
                         upEventArgs.Value.ListenPort = TcpSocketPort.ToString();
 
                         //写日志
-                        string temp1= "定时报";
-                        InvokeMessage("  gprs号码:  " + "0001" + String.Format("  {0,-10}   ", temp1) + upEventArgs.RawData, "接收");
+                        //string temp1= "定时报";
+                        //InvokeMessage("  gprs号码:  " + "1234" + String.Format("  {0,-10}   ", temp1) + upEventArgs.RawData, "接收");
 
                         //返回报文数据到主程序
                         if (this.UpDataReceived != null)

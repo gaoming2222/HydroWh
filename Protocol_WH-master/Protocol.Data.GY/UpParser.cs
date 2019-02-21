@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Hydrology.Entity;
+using System.Text.RegularExpressions;
+using System.Xml.Serialization;
+using System.IO;
 
 //namespace Protocol.Data.GY
 //{
@@ -86,7 +89,7 @@ namespace Protocol.Data.GY
                 //丢弃中心站地址（2位）
                 data = data.Substring(2);
                 //遥测站地址（10位）00+8位站号
-                string id = data.Substring(2, 8);
+                string id = data.Substring(0, 10);
                 data = data.Substring(10);
                 //丢弃密码（4位）
                 data = data.Substring(4);
@@ -137,7 +140,7 @@ namespace Protocol.Data.GY
                 }
 
                 // 丢弃结束符 03
-                data = data.Substring(2);
+                data = data.Substring(1);
                 // 丢弃校验
                 data = data.Substring(4);
 
@@ -200,6 +203,7 @@ namespace Protocol.Data.GY
 
         public bool DealData(string msg, string reportType, out CReportStruct report)
         {
+            EStationType type = new EStationType();
             report = new CReportStruct();
             try
             {
@@ -215,430 +219,790 @@ namespace Protocol.Data.GY
                     minute: int.Parse(data.Substring(8, 2)),
                     second: int.Parse(data.Substring(10, 2))
                     );
+                //删除发送时间
                 data = data.Substring(12);
+                //删除ST  站号引导符号
+                data = data.Substring(2);
+                //删除空格
+                data = data.Substring(1);
+                //获取站点ID
+                string stationId = data.Substring(0, 10);
+                //删除站点ID
+                data = data.Substring(10);
+                //删除空格
+                data = data.Substring(1);
+                string stationTypeString = data.Substring(0, 1);
+                if (stationTypeString == "H")
+                {
+                    type = EStationType.EH;
+                }
+                if (stationTypeString == "P")
+                {
+                    type = EStationType.ERainFall;
+                }
+                //删除站点类型
+                data = data.Substring(1);
 
                 // report中的数据初始化
                 List<CReportData> datas = new List<CReportData>();
                 TimeSpan span = new TimeSpan(0);
-                EStationType type = new EStationType();
+                
                 DateTime dataTime = sendTime;
-                int dataAccuracyLength;
-                int dataLength;
-                Decimal dataAccuracy;
-                Decimal dayRain;
-                Decimal diffRain;
-                string dataDefine, dataDefine1, dataDefine2;
+                //int dataAccuracyLength;
+                //int dataLength;
+                //Decimal dataAccuracy;
+                //Decimal dayRain;
 
-                while (data.Length >= 2)
+                Nullable<Decimal> diffRain = null;
+                Nullable<Decimal> totalRain = null;
+                Nullable<Decimal> waterStage = null;
+                Nullable<Decimal> voltage = null;
+                //string dataDefine, dataDefine1, dataDefine2;
+                //int flag = 0;
+                if(data.Length >= 10)
                 {
-                    // 截取要素标识符
-                    string sign = data.Substring(0, 2);
-                    // 根据要素标识符取数据
-                    switch (sign)
+                    string[] dataArr =  Regex.Split(data, "TT", RegexOptions.IgnoreCase);
+                    for(int i = 0; i < dataArr.Length; i++)
                     {
-                        case "ST":
-                            // 丢弃标识符
-                            data = data.Substring(2);
-                            // 丢弃一个字节+观测站地址
-                            data = data.Substring(12);
-                            // 遥测站分类码，不确定是不是一定在这个后面
-                            string stationTypeString = data.Substring(0, 2);
-                            data = data.Substring(2);
-                            type = stationTypeString == "50" ? EStationType.ERainFall : EStationType.EHydrology;
-                            break;
-                        case "TT":
-                            // 丢弃标识符
-                            data = data.Substring(2);
-                            //丢弃一个字节
-                            data = data.Substring(2);
-                            dataTime = new DateTime(
-                                year: int.Parse("20" + data.Substring(0, 2)),
-                                month: int.Parse(data.Substring(2, 2)),
-                                day: int.Parse(data.Substring(4, 2)),
-                                hour: int.Parse(data.Substring(6, 2)),
-                                minute: int.Parse(data.Substring(8, 2)),
+                        string oneGram = dataArr[i].Trim();
+                        List<decimal> rainList = new List<decimal>();
+                        List<decimal> waterList = new List<decimal>();
+                        if (oneGram.Length < 10)
+                        {
+                            continue;
+                        }
+                        dataTime = new DateTime(
+                                year: int.Parse("20" + oneGram.Substring(0, 2)),
+                                month: int.Parse(oneGram.Substring(2, 2)),
+                                day: int.Parse(oneGram.Substring(4, 2)),
+                                hour: int.Parse(oneGram.Substring(6, 2)),
+                                minute: int.Parse(oneGram.Substring(8, 2)),
                                 second: 0
                             );
-                            data = data.Substring(10);
-                            break;
-                        case "DRxnn":
-                            // 丢弃标识符
-                            data = data.Substring(2);
-                            // 丢弃数据定义18 3个字节、精度0
-                            data = data.Substring(2);
-                            // 时间步长
-                            string timeSpanString = data.Substring(0, 6);
-                            data = data.Substring(6);
-                            TimeSpan timeSpan = new TimeSpan(Int32.Parse(timeSpanString.Substring(0, 2)), Int32.Parse(timeSpanString.Substring(2, 2)), Int32.Parse(timeSpanString.Substring(4, 2)), 0);
-                            span = span + timeSpan;
-                            break;
-                        case "PD":
-                            // 丢弃标识符
-                            data = data.Substring(2);
-                            // 丢弃数据定义19 3个字节、精度1
-                            dataDefine1 = Convert.ToString(int.Parse(data.Substring(0, 1)), 2);
-                            dataDefine2 = Convert.ToString(int.Parse(data.Substring(1, 1)), 2);
-                            dataDefine = dataDefine1.PadLeft(4, '0') + dataDefine2.PadLeft(4, '0');
-                            dataLength = Convert.ToInt32(dataDefine.Substring(0, 5), 2) * 2;
-                            dataAccuracyLength = Convert.ToInt32(dataDefine.Substring(5, 3), 2);
-                            dataAccuracy = 1;
-                            while (dataAccuracyLength > 0)
-                            {
-                                dataAccuracy *= (decimal)0.1;
-                                dataAccuracyLength--;
-                            }
-                            data = data.Substring(2);
+                        //观测时间引导符
+                        if (oneGram.Contains("TT"))
+                        {
 
-                            string dayRainString = data.Substring(0, dataLength);
-                            data = data.Substring(dataLength);
+                        }
+                        if (oneGram.Contains("RGZS"))
+                        {
+
+                        }
+                        if (oneGram.Contains("PIC"))
+                        {
+
+                        }
+                        if (oneGram.Contains("DRP"))
+                        {
+                            int index = oneGram.IndexOf("DRP");
+                            string rainListStr = oneGram.Substring(index+4, 24).Trim();
+                            for(int j = 0; j < 12; j++)
+                            {
+                                rainList.Add((System.Int32.Parse(rainListStr.Substring(j * 2, 2), System.Globalization.NumberStyles.HexNumber)) * (decimal)(0.1));
+                            }
+
+                        }
+                        if (oneGram.Contains("DRZ"))
+                        {
+
+                        }
+                        if (oneGram.Contains("DRZ1"))
+                        {
+                            int index = oneGram.IndexOf("DRZ1");
+                            string waterListStr = oneGram.Substring(index+5, 48).Trim();
+                            for(int j =0;j < 12; j++)
+                            {
+                                waterList.Add((System.Int32.Parse(waterListStr.Substring(j * 4, 4), System.Globalization.NumberStyles.HexNumber)) * (decimal)0.01);
+                            }
+                        }
+                        if (oneGram.Contains("DATA"))
+                        {
+
+                        }
+                        if (oneGram.Contains("AC"))
+                        {
+
+                        }
+                        if (oneGram.Contains("AI"))
+                        {
+
+                        }
+                        if (oneGram.Contains("C"))
+                        {
+
+                        }
+                        if (oneGram.Contains("DRxnn"))
+                        {
+
+                        }
+                        if (oneGram.Contains("DT"))
+                        {
+
+                        }
+                        if (oneGram.Contains("ED"))
+                        {
+
+                        }
+                        if (oneGram.Contains("EJ"))
+                        {
+
+                        }
+                        if (oneGram.Contains("FL"))
+                        {
+
+                        }
+                        if (oneGram.Contains("GH"))
+                        {
+
+                        }
+                        if (oneGram.Contains("GN"))
+                        {
+
+                        }
+                        if (oneGram.Contains("GS"))
+                        {
+
+                        }
+                        if (oneGram.Contains("GT"))
+                        {
+
+                        }
+                        if (oneGram.Contains("GTP"))
+                        {
+
+                        }
+                        if (oneGram.Contains("H"))
+                        {
+
+                        }
+                        if (oneGram.Contains("HW"))
+                        {
+
+                        }
+                        if (oneGram.Contains("M10"))
+                        {
+
+                        }
+                        if (oneGram.Contains("M20"))
+                        {
+
+                        }
+                        if(oneGram.Contains("M30"))
+                        {
+
+                        }
+                        if(oneGram.Contains("M40"))
+                        {
+
+                        }
+                        if (oneGram.Contains("M50"))
+                        {
+
+                        }
+                        if (oneGram.Contains("M60"))
+                        {
+
+                        }
+                        if (oneGram.Contains("M80"))
+                        {
+
+                        }
+                        if (oneGram.Contains("M100"))
+                        {
+
+                        }
+                        if (oneGram.Contains("MST"))
+                        {
+
+                        }
+                        if (oneGram.Contains("P1"))
+                        {
+
+                        }
+                        if (oneGram.Contains("P2"))
+                        {
+
+                        }
+                        if (oneGram.Contains("P3"))
+                        {
+
+                        }
+                        if (oneGram.Contains("P6"))
+                        {
+
+                        }
+                        if (oneGram.Contains("P12"))
+                        {
+
+                        }
+                        //日降水量
+                        if (oneGram.Contains("PD"))
+                        {
+
+                        }
+                        //当前降水量
+                        if (oneGram.Contains("PJ"))
+                        {
+                            int index = oneGram.IndexOf("PJ");
+                            string endStr = oneGram.Substring(index).Trim();
+                            string[] endStrList = endStr.Split(' ');
+                            string diffRainString = endStrList[1];
                             try
                             {
-                                dayRain = Decimal.Parse(dayRainString) * dataAccuracy;
+                                diffRain = Decimal.Parse(diffRainString);
                             }
                             catch (Exception e)
                             {
                                 System.Diagnostics.Debug.WriteLine("规约协议数据截取错误" + e.ToString());
                             }
-                            break;
-                        case "PJ":
-                            // 丢弃标识符
-                            data = data.Substring(2);
-                            // 丢弃数据定义19 3个字节、精度1
-                            dataDefine1 = Convert.ToString(int.Parse(data.Substring(0, 1)), 2);
-                            dataDefine2 = Convert.ToString(int.Parse(data.Substring(1, 1)), 2);
-                            dataDefine = dataDefine1.PadLeft(4, '0') + dataDefine2.PadLeft(4, '0');
-                            dataLength = Convert.ToInt32(dataDefine.Substring(0, 5), 2) * 2;
-                            dataAccuracyLength = Convert.ToInt32(dataDefine.Substring(5, 3), 2);
-                            dataAccuracy = 1;
-                            while (dataAccuracyLength > 0)
-                            {
-                                dataAccuracy *= (decimal)0.1;
-                                dataAccuracyLength--;
-                            }
-                            data = data.Substring(2);
+                        }
+                        //1分钟时段降水量
+                        if (oneGram.Contains("PN01"))
+                        {
 
-                            string diffRainString = data.Substring(0, dataLength);
-                            data = data.Substring(dataLength);
+                        }
+                        //5分钟时段降水量
+                        if (oneGram.Contains("PN05"))
+                        {
+
+                        }
+                        //10分钟时段降水量
+                        if (oneGram.Contains("PN10"))
+                        {
+
+                        }
+                        //30分钟时段降水量
+                        if (oneGram.Contains("PN30"))
+                        {
+
+                        }
+                        //暴雨量
+                        if (oneGram.Contains("PR"))
+                        {
+
+                        }
+                        if (oneGram.Contains("PT"))
+                        {
+                            int index = oneGram.IndexOf("PT");
+                            string endStr = oneGram.Substring(index).Trim();
+                            string[] endStrList = endStr.Split(' ');
+                            string totalRainString = endStrList[1];
                             try
                             {
-                                diffRain = Decimal.Parse(diffRainString) * dataAccuracy;
+                                totalRain = Decimal.Parse(totalRainString);
                             }
                             catch (Exception e)
                             {
                                 System.Diagnostics.Debug.WriteLine("规约协议数据截取错误" + e.ToString());
                             }
-                            break;
-                        case "PT":
-                            // 丢弃标识符
-                            data = data.Substring(2);
-                            // 数据定义19 3个字节、精度1
-                            dataDefine1 = Convert.ToString(int.Parse(data.Substring(0, 1)), 2);
-                            dataDefine2 = Convert.ToString(int.Parse(data.Substring(1, 1)), 2);
-                            dataDefine = dataDefine1.PadLeft(4, '0') + dataDefine2.PadLeft(4, '0');
-                            dataLength = Convert.ToInt32(dataDefine.Substring(0, 5), 2) * 2;
-                            dataAccuracyLength = Convert.ToInt32(dataDefine.Substring(5, 3), 2);
-                            dataAccuracy = 1;
-                            while (dataAccuracyLength > 0)
+                        }
+                        //瞬时河道水位、潮位
+                        if (oneGram.Contains("Z "))
+                        {
+                            int index = oneGram.IndexOf("Z ");
+                            string endStr = oneGram.Substring(index).Trim();
+                            string[] endStrList = endStr.Split(' ');
+                            string waterStageString = endStrList[1];
+                            try
                             {
-                                dataAccuracy *= (decimal)0.1;
-                                dataAccuracyLength--;
+                                waterStage = Decimal.Parse(waterStageString);
                             }
-                            data = data.Substring(2);
-
-                            // 根据长度精度解析数据
-                            if (reportType == "31")
+                            catch (Exception e)
                             {
-                                for (int i = 0; i < 13; i++)
-                                {
-                                    try
-                                    {
-                                        // 数据截取
-                                        string rainString = data.Substring(0, dataLength);
-                                        data = data.Substring(dataLength);
-                                        if (i != 0)
-                                        {
-                                            dataTime = dataTime + span;
-                                        }
-                                        Decimal rain = 0;
-                                        rain = Decimal.Parse(rainString) * dataAccuracy;
-
-                                        // 数据封包
-                                        bool isExists = false;
-                                        if (datas.Count != 0)
-                                        {
-                                            foreach (var d in datas)
-                                            {
-                                                if (d.Time == dataTime)
-                                                {
-                                                    isExists = true;
-                                                    d.Rain = rain;
-                                                }
-                                            }
-                                        }
-                                        if (isExists == false)
-                                        {
-                                            CReportData reportData = new CReportData
-                                            {
-                                                Rain = rain,
-                                                Time = dataTime
-                                            };
-                                            datas.Add(reportData);
-                                        }
-
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        System.Diagnostics.Debug.WriteLine("规约协议数据截取错误" + e.ToString());
-                                    }
-                                }
+                                System.Diagnostics.Debug.WriteLine("规约协议数据截取错误" + e.ToString());
                             }
-                            else if (reportType == "32" || reportType == "33")
+                        }
+                        //电压
+                        if (oneGram.Contains("VT"))
+                        {
+                            int index = oneGram.IndexOf("VT");
+                            string endStr = oneGram.Substring(index).Trim();
+                            string[] endStrList = endStr.Split(' ');
+                            string voltageString = endStrList[1];
+                            try
                             {
-                                try
-                                {
-                                    // 数据截取
-                                    string rainString = data.Substring(0, dataLength);
-                                    data = data.Substring(dataLength);
-                                    Decimal rain = 0;
-                                    rain = Decimal.Parse(rainString) * dataAccuracy;
-
-                                    // 数据封包
-                                    bool isExists = false;
-                                    if (datas.Count != 0)
-                                    {
-                                        foreach (var d in datas)
-                                        {
-                                            if (d.Time == dataTime)
-                                            {
-                                                isExists = true;
-                                                d.Rain = rain;
-                                            }
-                                        }
-                                    }
-                                    if (isExists == false)
-                                    {
-                                        CReportData reportData = new CReportData
-                                        {
-                                            Rain = rain,
-                                            Time = dataTime
-                                        };
-                                        datas.Add(reportData);
-                                    }
-
-                                }
-                                catch (Exception e)
-                                {
-                                    System.Diagnostics.Debug.WriteLine("规约协议数据截取错误" + e.ToString());
-                                }
+                                voltage = Decimal.Parse(voltageString);
                             }
-                            break;
-                        case "Z":
-                            // 丢弃标识符
-                            data = data.Substring(2);
-                            // 丢弃数据定义23 4个字节、精度3
-                            dataDefine1 = Convert.ToString(int.Parse(data.Substring(0, 1)), 2);
-                            dataDefine2 = Convert.ToString(int.Parse(data.Substring(1, 1)), 2);
-                            dataDefine = dataDefine1.PadLeft(4, '0') + dataDefine2.PadLeft(4, '0');
-                            dataLength = Convert.ToInt32(dataDefine.Substring(0, 5), 2) * 2;
-                            dataAccuracyLength = Convert.ToInt32(dataDefine.Substring(5, 3), 2);
-                            dataAccuracy = 1;
-                            while (dataAccuracyLength > 0)
+                            catch (Exception e)
                             {
-                                dataAccuracy *= (decimal)0.1;
-                                dataAccuracyLength--;
+                                System.Diagnostics.Debug.WriteLine("规约协议数据截取错误" + e.ToString());
                             }
-                            data = data.Substring(2);
-
-                            // 根据长度精度解析数据
-                            if (reportType == "31")
+                        }
+                        //定时报和均匀时段报处理
+                        // 雨量组 和 水位组 均有数据 且数量相等。
+                        if(rainList != null && rainList.Count > 0 && waterList != null && rainList.Count == waterList.Count)
+                        {
+                            CReportData oneData = new CReportData();
+                            for(int k = 0; k < rainList.Count; k++)
                             {
-                                for (int i = 0; i < 13; i++)
-                                {
-                                    try
-                                    {
-                                        // 数据截取
-                                        string waterString = data.Substring(0, dataLength);
-                                        data = data.Substring(dataLength);
-                                        if (i != 0)
-                                        {
-                                            dataTime = dataTime + span;
-                                        }
-                                        Decimal water = 0;
-                                        water = Decimal.Parse(waterString) * dataAccuracy;
+                                DateTime tmpDate = dataTime.AddMinutes(5 * k);
+                                oneData.Time = tmpDate;
+                                oneData.DiffRain = rainList[k];
+                                oneData.Water = waterList[k];
+                                datas.Add(DeepClone(oneData));
 
-                                        // 数据封包
-                                        bool isExists = false;
-                                        if (datas.Count != 0)
-                                        {
-                                            foreach (var d in datas)
-                                            {
-                                                if (d.Time == dataTime)
-                                                {
-                                                    isExists = true;
-                                                    d.Water = water;
-                                                }
-                                            }
-                                        }
-                                        if (isExists == false)
-                                        {
-                                            CReportData reportData = new CReportData
-                                            {
-                                                Water = water,
-                                                Time = dataTime
-                                            };
-                                            datas.Add(reportData);
-                                        }
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        System.Diagnostics.Debug.WriteLine("规约协议数据截取错误" + e.ToString());
-                                    }
-                                }
                             }
-                            else if (reportType == "32" || reportType == "33")
+                        }
+                        // 雨量组数据 和 水位组数据不匹配
+                        else
+                        {
+                            //
+                            if (rainList != null && rainList.Count > 0)
                             {
-                                try
-                                {
-                                    // 数据截取
-                                    string waterString = data.Substring(0, dataLength);
-                                    data = data.Substring(dataLength);
-                                    Decimal water = 0;
-                                    water = Decimal.Parse(waterString) * dataAccuracy;
-
-                                    // 数据封包
-                                    bool isExists = false;
-                                    if (datas.Count != 0)
+                                CReportData oneData = new CReportData();
+                                    for (int k = 0; k < rainList.Count; k++)
                                     {
-                                        foreach (var d in datas)
-                                        {
-                                            if (d.Time == dataTime)
-                                            {
-                                                isExists = true;
-                                                d.Water = water;
-                                            }
-                                        }
+                                        DateTime tmpDate = dataTime.AddMinutes(5 * k);
+                                        oneData.Time = tmpDate;
+                                        oneData.DiffRain = rainList[k];
+                                        datas.Add(DeepClone(oneData));
                                     }
-                                    if (isExists == false)
-                                    {
-                                        CReportData reportData = new CReportData
-                                        {
-                                            Water = water,
-                                            Time = dataTime
-                                        };
-                                        datas.Add(reportData);
-                                    }
-                                }
-                                catch (Exception e)
-                                {
-                                    System.Diagnostics.Debug.WriteLine("规约协议数据截取错误" + e.ToString());
-                                }
                             }
-                            break;
-                        case "VT":
-                            // 丢弃标识符
-                            data = data.Substring(2);
-                            // 丢弃数据定义?? ?个字节、精度？
-                            dataDefine1 = Convert.ToString(int.Parse(data.Substring(0, 1)), 2);
-                            dataDefine2 = Convert.ToString(int.Parse(data.Substring(1, 1)), 2);
-                            dataDefine = dataDefine1.PadLeft(4, '0') + dataDefine2.PadLeft(4, '0');
-                            dataLength = Convert.ToInt32(dataDefine.Substring(0, 5), 2) * 2;
-                            dataAccuracyLength = Convert.ToInt32(dataDefine.Substring(5, 3), 2);
-                            dataAccuracy = 1;
-                            while (dataAccuracyLength > 0)
+
+                            if (waterList != null && waterList.Count > 0)
                             {
-                                dataAccuracy *= (decimal)0.1;
-                                dataAccuracyLength--;
+                                CReportData oneData = new CReportData();
+                                    for (int k = 0; k < waterList.Count; k++)
+                                    {
+                                        DateTime tmpDate = dataTime.AddMinutes(5 * k);
+                                        oneData.Time = tmpDate;
+                                        oneData.Water = waterList[k];
+                                        datas.Add(DeepClone(oneData));
+                                    }
+                                
                             }
-                            data = data.Substring(2);
-
-                            // 根据长度精度解析数据
-                            if (reportType == "31")
-                            {
-                                for (int i = 0; i < 13; i++)
-                                {
-                                    try
-                                    {
-                                        // 数据截取
-                                        string voltageString = data.Substring(0, dataLength);
-                                        data = data.Substring(dataLength);
-                                        if (i != 0)
-                                        {
-                                            dataTime = dataTime + span;
-                                        }
-                                        Decimal voltage = 0;
-                                        voltage = Decimal.Parse(voltageString) * dataAccuracy;
-
-                                        // 数据封包
-                                        bool isExists = false;
-                                        if (datas.Count != 0)
-                                        {
-                                            foreach (var d in datas)
-                                            {
-                                                if (d.Time == dataTime)
-                                                {
-                                                    isExists = true;
-                                                    d.Voltge = voltage;
-                                                }
-                                            }
-                                        }
-                                        if (isExists == false)
-                                        {
-                                            CReportData reportData = new CReportData
-                                            {
-                                                Voltge = voltage,
-                                                Time = dataTime
-                                            };
-                                            datas.Add(reportData);
-                                        }
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        System.Diagnostics.Debug.WriteLine("规约协议数据截取错误" + e.ToString());
-                                    }
-                                }
-                            }
-                            else if (reportType == "32" || reportType == "33")
-                            {
-                                try
-                                {
-                                    // 数据截取
-                                    string voltageString = data.Substring(0, dataLength);
-                                    data = data.Substring(dataLength);
-                                    Decimal voltage = 0;
-                                    voltage = Decimal.Parse(voltageString) * dataAccuracy;
-
-                                    // 数据封包
-                                    bool isExists = false;
-                                    if (datas.Count != 0)
-                                    {
-                                        foreach (var d in datas)
-                                        {
-                                            if (d.Time == dataTime)
-                                            {
-                                                isExists = true;
-                                                d.Voltge = voltage;
-                                            }
-                                        }
-                                    }
-                                    if (isExists == false)
-                                    {
-                                        CReportData reportData = new CReportData
-                                        {
-                                            Voltge = voltage,
-                                            Time = dataTime
-                                        };
-                                        datas.Add(reportData);
-                                    }
-                                }
-                                catch (Exception e)
-                                {
-                                    System.Diagnostics.Debug.WriteLine("规约协议数据截取错误" + e.ToString());
-                                }
-                            }
-                            break;
-                        default: break;
+                        }
+                        //普通报文处理
+                        if (diffRain != null || totalRain != null ||voltage != null)
+                        {
+                            CReportData oneData = new CReportData();
+                            oneData.Time = dataTime;
+                            oneData.Rain = totalRain;
+                            oneData.DiffRain = diffRain;
+                            oneData.Water = waterStage;
+                            oneData.Voltge = voltage;
+                            datas.Add(DeepClone(oneData));
+                        }
                     }
                 }
+                #region 废码代码
+                //while (data.Length >= 2)
+                //{
+                //    // 截取要素标识符
+                //    string sign = data.Substring(0, 2);
+                //    flag = flag + 1;
+                //    if(flag > 100)
+                //    {
+                //        break;
+                //    }
+                //    // 根据要素标识符取数据
+                //    switch (sign)
+                //    {
+                //        case "ST":
+                //            // 丢弃标识符
+                //            data = data.Substring(2);
+                //            // 丢弃一个字节
+                //            data = data.Substring(1);
+                //            // 丢弃一个测站地址
+                //            data = data.Substring(10);
+                //            // 丢弃一个字节
+                //            data = data.Substring(1);
+
+                //            // 遥测站分类码，不确定是不是一定在这个后面
+                //            string stationTypeString = data.Substring(0,1);
+                //            if(stationTypeString == "H")
+                //            {
+                //                type = EStationType.EH;
+                //            }
+                //            if(stationTypeString == "P")
+                //            {
+                //                type = EStationType.ERainFall;
+                //            }
+                //            data = data.Substring(1);
+                //            //type = stationTypeString == "50" ? EStationType.ERainFall : EStationType.EHydrology;
+                //            data = data.Substring(1);
+                //            break;
+                //        case "TT":
+                //            // 丢弃标识符
+                //            data = data.Substring(2);
+                //            //丢弃一个字节
+                //            data = data.Substring(1);
+                //            dataTime = new DateTime(
+                //                year: int.Parse("20" + data.Substring(0, 2)),
+                //                month: int.Parse(data.Substring(2, 2)),
+                //                day: int.Parse(data.Substring(4, 2)),
+                //                hour: int.Parse(data.Substring(6, 2)),
+                //                minute: int.Parse(data.Substring(8, 2)),
+                //                second: 0
+                //            );
+                //            data = data.Substring(10);
+                //            //丢弃一个字节
+                //            data = data.Substring(1);
+                //            break;
+                //        case "PD":
+                //            // 丢弃标识符
+                //            data = data.Substring(2);
+                //            // 丢弃数据定义19 3个字节、精度1
+                //            dataDefine1 = Convert.ToString(int.Parse(data.Substring(0, 1)), 2);
+                //            dataDefine2 = Convert.ToString(int.Parse(data.Substring(1, 1)), 2);
+                //            dataDefine = dataDefine1.PadLeft(4, '0') + dataDefine2.PadLeft(4, '0');
+                //            dataLength = Convert.ToInt32(dataDefine.Substring(0, 5), 2) * 2;
+                //            dataAccuracyLength = Convert.ToInt32(dataDefine.Substring(5, 3), 2);
+                //            dataAccuracy = 1;
+                //            while (dataAccuracyLength > 0)
+                //            {
+                //                dataAccuracy *= (decimal)0.1;
+                //                dataAccuracyLength--;
+                //            }
+                //            data = data.Substring(2);
+
+                //            string dayRainString = data.Substring(0, dataLength);
+                //            data = data.Substring(dataLength);
+                //            try
+                //            {
+                //                dayRain = Decimal.Parse(dayRainString) * dataAccuracy;
+                //            }
+                //            catch (Exception e)
+                //            {
+                //                System.Diagnostics.Debug.WriteLine("规约协议数据截取错误" + e.ToString());
+                //            }
+                //            break;
+                //        case "PJ":
+                //            // 丢弃标识符
+                //            data = data.Substring(2);
+                //            // 丢掉一个字节
+                //            data = data.Substring(1);
+                //            string[] rainArr = data.Split('.');
+                //            int rainLen = rainArr[0].Length;
+
+                //            string rainStr = data.Substring(0,rainLen + 2);
+                //            data = data.Substring(rainLen + 2);
+                //            data = data.Substring(1);
+                //            // 丢弃数据定义19 3个字节、精度1
+
+
+
+                //            string diffRainString = rainStr;
+
+                //            try
+                //            {
+                //                diffRain = Decimal.Parse(diffRainString);
+                //            }
+                //            catch (Exception e)
+                //            {
+                //                System.Diagnostics.Debug.WriteLine("规约协议数据截取错误" + e.ToString());
+                //            }
+                //            break;
+                //        case "PT":
+                //            // 丢弃标识符
+                //            data = data.Substring(2);
+                //            // 丢掉一个字节
+                //            data = data.Substring(1);
+
+                //            string[] dataArr = data.Split('.');
+                //            int tmp = dataArr[0].Length;
+                //            string totalRain = data.Substring(0,tmp + 2);
+
+                //            data = data.Substring(tmp + 2);
+                //            data = data.Substring(1);
+
+                //            // 根据长度精度解析数据
+                //            if (reportType == "31")
+                //            {
+                //                for (int i = 0; i < 13; i++)
+                //                {
+                //                    try
+                //                    {
+                //                        // 数据截取
+                //                        string rainString = totalRain;
+
+                //                        if (i != 0)
+                //                        {
+                //                            dataTime = dataTime + span;
+                //                        }
+                //                        Decimal rain = 0;
+                //                        rain = Decimal.Parse(rainString);
+
+                //                        // 数据封包
+                //                        bool isExists = false;
+                //                        if (datas.Count != 0)
+                //                        {
+                //                            foreach (var d in datas)
+                //                            {
+                //                                if (d.Time == dataTime)
+                //                                {
+                //                                    isExists = true;
+                //                                    d.Rain = rain;
+                //                                }
+                //                            }
+                //                        }
+                //                        if (isExists == false)
+                //                        {
+                //                            CReportData reportData = new CReportData
+                //                            {
+                //                                Rain = rain,
+                //                                Time = dataTime
+                //                            };
+                //                            datas.Add(reportData);
+                //                        }
+
+                //                    }
+                //                    catch (Exception e)
+                //                    {
+                //                        System.Diagnostics.Debug.WriteLine("规约协议数据截取错误" + e.ToString());
+                //                    }
+                //                }
+                //            }
+                //            else if (reportType == "32" || reportType == "33" || reportType == "30")
+                //            {
+                //                try
+                //                {
+                //                    // 数据截取
+                //                    string rainString = totalRain;
+
+                //                    Decimal rain = 0;
+                //                    rain = Decimal.Parse(rainString);
+
+                //                    // 数据封包
+                //                    bool isExists = false;
+                //                    if (datas.Count != 0)
+                //                    {
+                //                        foreach (var d in datas)
+                //                        {
+                //                            if (d.Time == dataTime)
+                //                            {
+                //                                isExists = true;
+                //                                d.Rain = rain;
+                //                            }
+                //                        }
+                //                    }
+                //                    if (isExists == false)
+                //                    {
+                //                        CReportData reportData = new CReportData
+                //                        {
+                //                            Rain = rain,
+                //                            Time = dataTime
+                //                        };
+                //                        datas.Add(reportData);
+                //                    }
+
+                //                }
+                //                catch (Exception e)
+                //                {
+                //                    System.Diagnostics.Debug.WriteLine("规约协议数据截取错误" + e.ToString());
+                //                }
+                //            }
+                //            break;
+                //        case "VT":
+                //            // 丢弃标识符
+                //            data = data.Substring(2);
+                //            //丢掉一个位置
+                //            data = data.Substring(1);
+                //            // 丢弃数据定义?? ?个字节、精度？
+                //            string[] voltageArr = data.Split('.');
+                //            int voltageLen = voltageArr[0].Length;
+                //            string voltageStr = data.Substring(0,voltageLen + 3);
+                //            data = data.Substring(voltageLen + 3);
+                //            data = data.Substring(1);
+
+                //            // 根据长度精度解析数据
+                //            if (reportType == "31")
+                //            {
+                //                for (int i = 0; i < 13; i++)
+                //                {
+                //                    try
+                //                    {
+                //                        // 数据截取
+                //                        string voltageString = voltageStr;
+                //                        if (i != 0)
+                //                        {
+                //                            dataTime = dataTime + span;
+                //                        }
+                //                        Decimal voltage = 0;
+                //                        voltage = Decimal.Parse(voltageString);
+
+                //                        // 数据封包
+                //                        bool isExists = false;
+                //                        if (datas.Count != 0)
+                //                        {
+                //                            foreach (var d in datas)
+                //                            {
+                //                                if (d.Time == dataTime)
+                //                                {
+                //                                    isExists = true;
+                //                                    d.Voltge = voltage;
+                //                                }
+                //                            }
+                //                        }
+                //                        if (isExists == false)
+                //                        {
+                //                            CReportData reportData = new CReportData
+                //                            {
+                //                                Voltge = voltage,
+                //                                Time = dataTime
+                //                            };
+                //                            datas.Add(reportData);
+                //                        }
+                //                    }
+                //                    catch (Exception e)
+                //                    {
+                //                        System.Diagnostics.Debug.WriteLine("规约协议数据截取错误" + e.ToString());
+                //                    }
+                //                }
+                //            }
+                //            else if (reportType == "32" || reportType == "33" ||reportType == "30")
+                //            {
+                //                try
+                //                {
+                //                    // 数据截取
+                //                    string voltageString = voltageStr;
+
+                //                    Decimal voltage = 0;
+                //                    voltage = Decimal.Parse(voltageString);
+
+                //                    // 数据封包
+                //                    bool isExists = false;
+                //                    if (datas.Count != 0)
+                //                    {
+                //                        foreach (var d in datas)
+                //                        {
+                //                            if (d.Time == dataTime)
+                //                            {
+                //                                isExists = true;
+                //                                d.Voltge = voltage;
+                //                            }
+                //                        }
+                //                    }
+                //                    if (isExists == false)
+                //                    {
+                //                        CReportData reportData = new CReportData
+                //                        {
+                //                            Voltge = voltage,
+                //                            Time = dataTime
+                //                        };
+                //                        datas.Add(reportData);
+                //                    }
+                //                }
+                //                catch (Exception e)
+                //                {
+                //                    System.Diagnostics.Debug.WriteLine("规约协议数据截取错误" + e.ToString());
+                //                }
+                //            }
+                //            break;
+                //        default:
+                //            if (data.StartsWith("Z"))
+                //            {
+                //                // 丢弃标识符
+                //                data = data.Substring(1);
+                //                //丢掉一个字节
+                //                data = data.Substring(1);
+                //                string[] dataArr2 = data.Split('.');
+                //                int tmp2 = dataArr2[0].Length;
+                //                // 丢弃数据定义23 4个字节、精度3
+                //                string waterStr = data.Substring(0,tmp2 + 4);
+                //                data = data.Substring(tmp2 + 4);
+                //                data = data.Substring(1);
+
+                //                // 根据长度精度解析数据
+                //                if (reportType == "31")
+                //                {
+                //                    for (int i = 0; i < 13; i++)
+                //                    {
+                //                        try
+                //                        {
+                //                            // 数据截取
+                //                            string waterString = waterStr;
+                //                            if (i != 0)
+                //                            {
+                //                                dataTime = dataTime + span;
+                //                            }
+                //                            Decimal water = 0;
+                //                            water = Decimal.Parse(waterString);
+
+                //                            // 数据封包
+                //                            bool isExists = false;
+                //                            if (datas.Count != 0)
+                //                            {
+                //                                foreach (var d in datas)
+                //                                {
+                //                                    if (d.Time == dataTime)
+                //                                    {
+                //                                        isExists = true;
+                //                                        d.Water = water;
+                //                                    }
+                //                                }
+                //                            }
+                //                            if (isExists == false)
+                //                            {
+                //                                CReportData reportData = new CReportData
+                //                                {
+                //                                    Water = water,
+                //                                    Time = dataTime
+                //                                };
+                //                                datas.Add(reportData);
+                //                            }
+                //                        }
+                //                        catch (Exception e)
+                //                        {
+                //                            System.Diagnostics.Debug.WriteLine("规约协议数据截取错误" + e.ToString());
+                //                        }
+                //                    }
+                //                }
+                //                else if (reportType == "32" || reportType == "33" || reportType == "30")
+                //                {
+                //                    try
+                //                    {
+                //                        // 数据截取
+                //                        string waterString = waterStr;
+                //                        Decimal water = 0;
+                //                        water = Decimal.Parse(waterString);
+
+                //                        // 数据封包
+                //                        bool isExists = false;
+                //                        if (datas.Count != 0)
+                //                        {
+                //                            foreach (var d in datas)
+                //                            {
+                //                                if (d.Time == dataTime)
+                //                                {
+                //                                    isExists = true;
+                //                                    d.Water = water;
+                //                                }
+                //                            }
+                //                        }
+                //                        if (isExists == false)
+                //                        {
+                //                            CReportData reportData = new CReportData
+                //                            {
+                //                                Water = water,
+                //                                Time = dataTime
+                //                            };
+                //                            datas.Add(reportData);
+                //                        }
+                //                    }
+                //                    catch (Exception e)
+                //                    {
+                //                        System.Diagnostics.Debug.WriteLine("规约协议数据截取错误" + e.ToString());
+                //                    }
+                //                }
+                //            }
+                //            else if (data.StartsWith("DRxnn"))
+                //            {
+                //                // 丢弃标识符
+                //                data = data.Substring(2);
+                //                // 丢弃数据定义18 3个字节、精度0
+                //                data = data.Substring(2);
+                //                // 时间步长
+                //                string timeSpanString = data.Substring(0, 6);
+                //                data = data.Substring(6);
+                //                TimeSpan timeSpan = new TimeSpan(Int32.Parse(timeSpanString.Substring(0, 2)), Int32.Parse(timeSpanString.Substring(2, 2)), Int32.Parse(timeSpanString.Substring(4, 2)), 0);
+                //                span = span + timeSpan;
+                //            }
+
+                //            break;
+                //    }
+                //}
+                #endregion
 
                 foreach (var d in datas)
                 {
@@ -681,6 +1045,22 @@ namespace Protocol.Data.GY
         {
             throw new NotImplementedException();
         }
+
+        #region 帮助方法
+        private  T DeepClone<T>(T obj)
+        {
+            T ret = default(T);
+            if (obj != null)
+            {
+                XmlSerializer cloner = new XmlSerializer(typeof(T));
+                MemoryStream stream = new MemoryStream();
+                cloner.Serialize(stream, obj);
+                stream.Seek(0, SeekOrigin.Begin);
+                ret = (T)cloner.Deserialize(stream);
+            }
+            return ret;
+        }
+        #endregion
 
     }
 }

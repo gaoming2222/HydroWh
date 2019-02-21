@@ -14,12 +14,16 @@ namespace Hydrology.Entity
         /// </summary>
         public Nullable<Decimal> Water { get; set; }
         /// <summary>
-        /// 雨量
+        /// 累计雨量
         /// </summary>
         public Nullable<Decimal> Rain { get; set; }
         /// <summary>
+        /// 差值雨量
+        /// </summary>
+        public Nullable<Decimal> DiffRain { get; set; }
+        /// <summary>
         /// 电压
         /// </summary>
-        public Decimal Voltge { get; set; }
+        public Nullable<Decimal> Voltge { get; set; }
     }
 }
