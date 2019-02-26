@@ -2421,7 +2421,6 @@ namespace Hydrology.DataMgr
                         {
                             continue;
                         }
-
                         //station.LastDayTime= data.DataTime
 
                         int year = data.DataTime.Year;
@@ -2504,16 +2503,21 @@ namespace Hydrology.DataMgr
                         rain.MessageType = args.EMessageType;
                         rain.ChannelType = args.EChannelType;
                         AssertAndAdjustRainData(rain, ref tmpRTDRainDataState);
-                        rain.DifferneceRain = rain.DifferneceRain.HasValue ? (rain.DifferneceRain < 0 ? 0 : rain.DifferneceRain) : null;
+                        //rain.DifferneceRain = rain.DifferneceRain.HasValue ? (rain.DifferneceRain < 0 ? 0 : rain.DifferneceRain) : null;
                         rain.DayRain = rain.DayRain.HasValue ? (rain.DayRain < 0 ? 0 : rain.DayRain) : null;
                         rain.PeriodRain = rain.PeriodRain.HasValue ? (rain.PeriodRain < 0 ? 0 : rain.PeriodRain) : null;
-                        rains.Add(rain);
+                        if(rain.DifferneceRain != null)
+                        {
+                            rains.Add(rain);
+                        }
+                        
                         // 更新站点信息，便于下次计算日雨量和时段雨量
                         station.LastTotalRain = rain.TotalRain;
                         // 如果时间设置的误差范围内
                         int offset = (data.DataTime.Hour - 8) * 60 + data.DataTime.Minute;
                     }
                     //interfaceHelper.Instance.insertRainList(rains);
+                    
                     m_proxyRain.AddNewRows(rains); //写入数据库
                                                    //NewTask(() => { foreach (CEntityRain rain in rains) { AssertRainData(rain); } });
                                                    //foreach (CEntityRain rain in rains) { AssertRainData(rain, ref tmpRTDDataState); }
@@ -2801,6 +2805,10 @@ namespace Hydrology.DataMgr
         }
         private Nullable<decimal> calRainForRealTimeDayRain(string stationid, Nullable<decimal> totalrain, DateTime tm, float accuracy, Nullable<decimal> lastDayRain, Nullable<DateTime> lastDayTime, DateTime tmp)
         {
+            if(totalrain == null || totalrain < 0 || lastDayRain == null || lastDayRain < 0)
+            {
+                return -1;
+            }
             Nullable<decimal> result = null;
             if (totalrain.HasValue && lastDayRain.HasValue)
             {

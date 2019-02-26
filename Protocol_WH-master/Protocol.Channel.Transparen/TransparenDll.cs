@@ -519,6 +519,71 @@ namespace Protocol.Channel.Transparen
             return sendSuccess;
         }
 
+
+        public bool SendData(string  stationId, string datagram)
+        {
+            bool sendSuccess = false;
+            TSession session = null;
+            uint sessionID = uint.Parse(getSessionIdbyStationid(stationId));
+            try
+            {
+                foreach (int key in _sessionTable.Keys)
+                {
+                    uint a = (uint)key;
+                    if ((uint)key == sessionID)
+                    {
+                        session = (TSession)_sessionTable[key];
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+
+            }
+
+            if (_sessionTable.ContainsKey(sessionID))
+            {
+                lock (_sessionTable)
+                {
+                    session = (TSession)_sessionTable[sessionID];
+                }
+            }
+            if (_sessionTable.ContainsKey(sessionID.ToString()))
+            {
+                lock (_sessionTable)
+                {
+                    session = (TSession)_sessionTable[sessionID.ToString()];
+                }
+            }
+
+
+            if (session != null && session.State == TSessionState.Normal)
+            {
+                lock (session)
+                {
+                    try
+                    {
+                        //byte[] data = Encoding.ASCII.GetBytes(datagram);  // 获得数据字节数组
+                        //TODO
+                        byte[] data = hexStringToByte(datagram);
+                        session.ClientSocket.BeginSend(data, 0, data.Length, SocketFlags.None, EndSendData, session);
+                        sendSuccess = true;
+                    }
+                    catch
+                    {
+                        session.DisconnectType = TDisconnectType.Exception;
+
+                        // 写 socket 发生错误，则准备关闭该会话，系统不认为是错误
+                        session.State = TSessionState.NoReply;
+
+                        this.OnClientException();
+                    }
+                }
+                InvokeMessage(datagram, "发送");
+            }
+
+            return sendSuccess;
+        }
         #endregion
 
 
@@ -1289,6 +1354,24 @@ namespace Protocol.Channel.Transparen
         {
             System.DateTime startTime = TimeZone.CurrentTimeZone.ToLocalTime(new System.DateTime(1970, 1, 1));
             return (int)(time - startTime).TotalSeconds;
+        }
+        
+        public  string  getSessionIdbyStationid(string stationId)
+        {
+            string sessionId = "0";
+            if(m_listTransparents == null || m_listTransparents.Count == 0)
+            {
+                return sessionId;
+            }
+            foreach (TransparentHelper transparent in m_listTransparents)
+            {
+                if (transparent.stationId == stationId)
+                {
+                    sessionId = transparent.sessionId;
+                    break;
+                }
+            }
+            return sessionId;
         }
         #endregion
 

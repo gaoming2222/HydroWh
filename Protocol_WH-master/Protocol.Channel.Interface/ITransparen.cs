@@ -52,6 +52,8 @@ namespace Protocol.Channel.Interface
         void ListenClientRequest(object state);
         bool SendData(uint id, string msg);
         List<ModemInfoStruct> getDTUList();
+        string getSessionIdbyStationid(string stationId);
+        bool SendData(string stationId, string datagram);
         Hashtable ClientSessionTable { get; }
     }
 }

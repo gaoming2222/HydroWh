@@ -532,6 +532,10 @@ namespace Hydrology.DataMgr
             {
                 query = SendGprsRead(id, stationID, cmds);
             }
+            if (EChannelType.TCP == ctype)
+            {
+                query = SendTcpRead(id, stationID, cmds);
+            }
             else if (EChannelType.GSM == ctype)
             {
                 query = SendGsmRead(id, stationID, cmds);
@@ -549,6 +553,10 @@ namespace Hydrology.DataMgr
             else if (EChannelType.GSM == ctype)
             {
                 query = SendGsmSet(id, stationID, cmds, down);
+            }
+            else if (EChannelType.TCP == ctype)
+            {
+                query = SendTcpSet(id, stationID, cmds, down);
             }
             return query;
         }
@@ -739,6 +747,11 @@ namespace Hydrology.DataMgr
             }
             return null;
         }
+        /// <summary>
+        /// 根据yo'g
+        /// </summary>
+        /// <param name="uid"></param>
+        /// <returns></returns>
         public IGprs FindGprsByUserid(string uid)
         {
             IGprs gprs = null;
@@ -753,6 +766,24 @@ namespace Hydrology.DataMgr
             }
             return gprs;
         }
+
+        public ITransparen FindTcpByUserid(string stationId)
+        {
+            ITransparen tcp = null;
+            foreach (var item in this.m_TransparenLists)
+            {
+               
+                if (item.getSessionIdbyStationid(stationId) != "0")
+                {
+                    tcp = item;
+                    break;
+                }
+            }
+            return tcp;
+        }
+
+
+
         public void StopGprs()
         {
             if (this.m_gprsLists == null)
@@ -910,6 +941,31 @@ namespace Hydrology.DataMgr
             return query;
         }
 
+        public String SendTcpRead(string userid, string stationID, IList<EDownParam> cmds)
+        {
+            string query = string.Empty;
+            var tcp = FindTcpByUserid(stationID);
+            if (tcp != null)
+            {
+                //uint dtuID = 0;
+                if (tcp.getSessionIdbyStationid(stationID) != "0")
+                {
+                    //TODO
+                    query = tcp.Down.BuildQuery(stationID, cmds, EChannelType.TCP);
+                    tcp.SendData(stationID, "123");
+                }
+                //1109
+                else
+                {
+                    MessageBox.Show("站点" + stationID + "当前不在线！");
+                }
+            }
+            else
+            {
+                MessageBox.Show("站点" + stationID + "当前不在线！");
+            }
+            return query;
+        }
         /// <summary>
         /// GPRS 发送设置命令
         /// </summary>
@@ -940,6 +996,38 @@ namespace Hydrology.DataMgr
             return query;
         }
 
+        /// <summary>
+        /// 透明传输发送指令
+        /// </summary>
+        /// <param name="userid"></param>
+        /// <param name="stationID"></param>
+        /// <param name="cmds"></param>
+        /// <param name="down"></param>
+        /// <returns></returns>
+        public String SendTcpSet(string userid, string stationID, IList<EDownParam> cmds, CDownConf down)
+        {
+            //TODO
+            string query = string.Empty; ;
+            var gprs = FindGprsByUserid(userid);
+            if (gprs != null)
+            {
+                uint dtuID = 0;
+                if (gprs.FindByID(userid, out dtuID))
+                {
+                    query = gprs.Down.BuildSet(stationID, cmds, down, EChannelType.GPRS);
+                    gprs.SendDataTwice(dtuID, query);
+                }
+                else
+                {
+                    MessageBox.Show("站点" + stationID + "当前不在线！");
+                }
+            }
+            else
+            {
+                MessageBox.Show("站点" + stationID + "当前不在线！");
+            }
+            return query;
+        }
         /// <summary>
         /// GPRS 发送优盘批量传输数据
         /// </summary>

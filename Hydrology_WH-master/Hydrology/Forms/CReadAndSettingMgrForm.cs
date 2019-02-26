@@ -72,6 +72,7 @@ namespace Hydrology.Forms
             {
                 EChannelType.GPRS.ToString(),
                 EChannelType.GSM.ToString(),
+                EChannelType.TCP.ToString(),
                 //EChannelType.BeiDou.ToString(),
                 //EChannelType.PSTN.ToString()
             };
@@ -747,12 +748,12 @@ namespace Hydrology.Forms
                     return;
                 }
                 #endregion
-                string gprsNum = this.txtGprs.Text;
-                if (String.IsNullOrEmpty(gprsNum))
-                {
-                    MessageBox.Show(this.cmbMsgType.Text + "号码不能为空!");
-                    return;
-                }
+                //string gprsNum = this.txtGprs.Text;
+                //if (String.IsNullOrEmpty(gprsNum))
+                //{
+                //    MessageBox.Show(this.cmbMsgType.Text + "号码不能为空!");
+                //    return;
+                //}
                 if (this.m_channelType == EChannelType.GPRS)
                 {
                     if (!HasUserOnLine())
@@ -760,7 +761,7 @@ namespace Hydrology.Forms
                         return;
                     }
                 }
-
+                string gprsNum = "00000000";
                 string query = CPortDataMgr.Instance.SendReadMsg(gprsNum, sid, cmds, this.m_channelType);
                 m_RSStatus = EReadOrSetStatus.Read;
                 //  日志记录
@@ -1192,6 +1193,12 @@ namespace Hydrology.Forms
                 this.lblGprs.Text = "GSM号码:";
                 m_channelType = EChannelType.GSM;
                 this.txtGprs.Text = station.GSM;
+            }
+            else if (txt == EChannelType.TCP.ToString())
+            {
+                this.lblGprs.Text = "GSM号码:";
+                m_channelType = EChannelType.TCP;
+                //this.txtGprs.Text = station;
             }
             else if (txt == EChannelType.BeiDou.ToString())
             {
