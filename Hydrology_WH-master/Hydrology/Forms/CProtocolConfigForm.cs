@@ -925,6 +925,10 @@ namespace Hydrology.Forms
                 {
                     this.txt_DataProtocolName.Text = "LN";
                 }
+                if (this.txt_DataDllFileName.Text == "Protocol.Data.GY.dll")
+                {
+                    this.txt_DataProtocolName.Text = "GY";
+                }
             }
         }
         private void btnDataSaveAddNew_Click(object sender, EventArgs e)

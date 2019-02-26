@@ -643,105 +643,105 @@ namespace Hydrology.Forms
                 string sid = station.StationID;
                 //  配置参数
                 #region 配置参数
-                var cmds = new List<EDownParam>();
-                if (this.chkClock.Checked)
-                {
-                    cmds.Add(EDownParam.Clock);
-                }
-                if (this.chkVoltage.Checked)
-                {
-                    cmds.Add(EDownParam.Voltage);
-                }
-                if (this.chkStationCmdID.Checked)
-                {
-                    cmds.Add(EDownParam.StationCmdID);
-                }
-                if (this.chkNormalState.Checked)
-                {
-                    cmds.Add(EDownParam.NormalState);
-                }
+                var cmds = new List<EDownParamGY>();
+                //if (this.chkClock.Checked)
+                //{
+                //    cmds.Add(EDownParam.Clock);
+                //}
+                //if (this.chkVoltage.Checked)
+                //{
+                //    cmds.Add(EDownParam.Voltage);
+                //}
+                //if (this.chkStationCmdID.Checked)
+                //{
+                //    cmds.Add(EDownParam.StationCmdID);
+                //}
+                //if (this.chkNormalState.Checked)
+                //{
+                //    cmds.Add(EDownParam.NormalState);
+                //}
                 if (this.chkVersionNum.Checked)
                 {
-                    cmds.Add(EDownParam.VersionNum);
+                    cmds.Add(EDownParamGY.ontime);
                 }
-                if (this.chkWorkStatus.Checked)
-                {
-                    cmds.Add(EDownParam.WorkStatus);
-                }
-                if (this.chkTimePeriod.Checked)
-                {
-                    cmds.Add(EDownParam.TimePeriod);
-                }
-                if (this.chkTimeChoice.Checked)
-                {
-                    cmds.Add(EDownParam.TimeChoice);
-                }
+                //if (this.chkWorkStatus.Checked)
+                //{
+                //    cmds.Add(EDownParam.WorkStatus);
+                //}
+                //if (this.chkTimePeriod.Checked)
+                //{
+                //    cmds.Add(EDownParam.TimePeriod);
+                //}
+                //if (this.chkTimeChoice.Checked)
+                //{
+                //    cmds.Add(EDownParam.TimeChoice);
+                //}
 
-                if (this.chkMainChannel.Checked)
-                {
-                    cmds.Add(EDownParam.StandbyChannel);
-                }
-                if (this.chkDestPhoneNum.Checked)
-                {
-                    cmds.Add(EDownParam.DestPhoneNum);
-                }
-                if (this.chkTeleNum.Checked)
-                {
-                    cmds.Add(EDownParam.TeleNum);
-                }
-                if (this.chkTerminalNum.Checked)
-                {
-                    cmds.Add(EDownParam.TerminalNum);
-                }
-                if (this.chkRespBeam.Checked)
-                {
-                    cmds.Add(EDownParam.RespBeam);
-                }
-                if (this.chkRingsNum.Checked)
-                {
-                    cmds.Add(EDownParam.RingsNum);
-                }
+                //if (this.chkMainChannel.Checked)
+                //{
+                //    cmds.Add(EDownParam.StandbyChannel);
+                //}
+                //if (this.chkDestPhoneNum.Checked)
+                //{
+                //    cmds.Add(EDownParam.DestPhoneNum);
+                //}
+                //if (this.chkTeleNum.Checked)
+                //{
+                //    cmds.Add(EDownParam.TeleNum);
+                //}
+                //if (this.chkTerminalNum.Checked)
+                //{
+                //    cmds.Add(EDownParam.TerminalNum);
+                //}
+                //if (this.chkRespBeam.Checked)
+                //{
+                //    cmds.Add(EDownParam.RespBeam);
+                //}
+                //if (this.chkRingsNum.Checked)
+                //{
+                //    cmds.Add(EDownParam.RingsNum);
+                //}
 
-                if (this.chkAvegTime.Checked)
-                {
-                    cmds.Add(EDownParam.AvegTime);
-                }
-                if (this.chkStationType.Checked)
-                {
-                    cmds.Add(EDownParam.StationType);
-                }
-                if (this.chkWater.Checked)
-                {
-                    cmds.Add(EDownParam.Water);
-                }
-                if (this.chkWaterPlusReportedValue.Checked)
-                {
-                    cmds.Add(EDownParam.WaterPlusReportedValue);
-                }
-                if (this.chkRain.Checked)
-                {
-                    cmds.Add(EDownParam.Rain);
-                }
-                if (this.chkRainPlusReportedValue.Checked)
-                {
-                    cmds.Add(EDownParam.RainPlusReportedValue);
-                }
-                if (this.chkK.Checked)
-                {
-                    cmds.Add(EDownParam.KC);
-                }
-                if (this.chkSelectCollectionParagraphs.Checked)
-                {
-                    cmds.Add(EDownParam.SelectCollectionParagraphs);
-                }
-                if (this.chkUserName.Checked)
-                {
-                    cmds.Add(EDownParam.UserName);
-                }
-                if (this.chkStationName.Checked)
-                {
-                    cmds.Add(EDownParam.StationName);
-                }
+                //if (this.chkAvegTime.Checked)
+                //{
+                //    cmds.Add(EDownParam.AvegTime);
+                //}
+                //if (this.chkStationType.Checked)
+                //{
+                //    cmds.Add(EDownParam.StationType);
+                //}
+                //if (this.chkWater.Checked)
+                //{
+                //    cmds.Add(EDownParam.Water);
+                //}
+                //if (this.chkWaterPlusReportedValue.Checked)
+                //{
+                //    cmds.Add(EDownParam.WaterPlusReportedValue);
+                //}
+                //if (this.chkRain.Checked)
+                //{
+                //    cmds.Add(EDownParam.Rain);
+                //}
+                //if (this.chkRainPlusReportedValue.Checked)
+                //{
+                //    cmds.Add(EDownParam.RainPlusReportedValue);
+                //}
+                //if (this.chkK.Checked)
+                //{
+                //    cmds.Add(EDownParam.KC);
+                //}
+                //if (this.chkSelectCollectionParagraphs.Checked)
+                //{
+                //    cmds.Add(EDownParam.SelectCollectionParagraphs);
+                //}
+                //if (this.chkUserName.Checked)
+                //{
+                //    cmds.Add(EDownParam.UserName);
+                //}
+                //if (this.chkStationName.Checked)
+                //{
+                //    cmds.Add(EDownParam.StationName);
+                //}
                 if (cmds.Count == 0)
                 {
                     MessageBox.Show("请选择参数!");

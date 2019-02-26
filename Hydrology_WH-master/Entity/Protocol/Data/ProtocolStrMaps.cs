@@ -86,6 +86,34 @@ namespace Hydrology.Entity
             { EDownParam.UserName , "54" },
             { EDownParam.StationName , "55" }
         };
+        public static CDictionary<EDownParamGY, String> DownParamMapGY = new CDictionary<EDownParamGY, String>()
+        {
+            { EDownParamGY.ontime ,        "03" },
+            { EDownParamGY.DRZ ,  "04" },
+            { EDownParamGY.testtime ,      "05"},
+            { EDownParamGY.oldPwd , "08" },
+            { EDownParamGY.newPwd ,   "14" },
+            { EDownParamGY.memoryReset ,   "24" },
+            { EDownParamGY.timeFrom ,   "20" },
+            { EDownParamGY.timeTo ,   "19" },
+            { EDownParamGY.timeFrom_To,"27" },
+            { EDownParamGY.DRP ,      "28" },
+            { EDownParamGY.Step ,     "37" },
+            { EDownParamGY.basicConfig , "49" },
+            { EDownParamGY.operatingPara ,  "15" },
+            { EDownParamGY.Reset ,     "09" },
+            { EDownParamGY.ICconfig ,     "16" },
+            { EDownParamGY.pumpCtrl , "10" },
+            { EDownParamGY.valveCtrl ,       "62" },
+            { EDownParamGY.gateCtrl ,     "02" },
+            { EDownParamGY.waterYield ,    "12" },
+            { EDownParamGY.WaterPlusReportedValue ,     "06" },
+            { EDownParamGY.SelectCollectionParagraphs , "11" },
+            { EDownParamGY.StationType , "07" },
+            { EDownParamGY.UserName , "54" },
+            { EDownParamGY.StationName , "55" },
+            { EDownParamGY.Version,"88"}
+        };
         /// <summary>
         /// -1 表示长度未定
         /// 正数表示相应字段对应字符串解析中的长度
@@ -116,6 +144,34 @@ namespace Hydrology.Entity
             { EDownParam.StationType,               "2" },
             { EDownParam.UserName,                  "-1"},
             {EDownParam.StationName,                "-1"}
+        };
+
+        public static CDictionary<EDownParamGY, String> DownParamLengthMapGY = new CDictionary<EDownParamGY, String>()
+        {
+            { EDownParamGY.ontime,                    "12"},
+            { EDownParamGY.DRZ,                       "3" },
+            { EDownParamGY.testtime,                  "10"},
+            { EDownParamGY.oldPwd,                    "4" },
+            { EDownParamGY.newPwd,                    "4" },
+            { EDownParamGY.memoryReset,               "2" },
+            { EDownParamGY.timeFrom,                  "8" },
+            { EDownParamGY.timeTo,                    "8" },
+            { EDownParamGY.timeFrom_To,               "3" },
+            { EDownParamGY.DRP,                       "3" },
+            { EDownParamGY.Step,                      "5" },
+            { EDownParamGY.basicConfig,               "-1"},
+            { EDownParamGY.operatingPara,             "-1"},
+            { EDownParamGY.Reset,                     "2" },
+            { EDownParamGY.ICconfig,                  "10"},
+            { EDownParamGY.pumpCtrl,                  "-1"},
+            { EDownParamGY.valveCtrl,                 "-1"},
+            { EDownParamGY.gateCtrl,                  "-1"},
+            { EDownParamGY.waterYield,                "2" },
+            { EDownParamGY.WaterPlusReportedValue,    "2" },
+            { EDownParamGY.SelectCollectionParagraphs,"2" },
+            { EDownParamGY.StationType,               "2" },
+            { EDownParamGY.UserName,                  "-1"},
+            {EDownParamGY.StationName,                "-1"}
         };
 
         public static CDictionary<EDownParam, String> DownParam4ChineseMap = new CDictionary<EDownParam, string>()

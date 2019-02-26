@@ -525,21 +525,21 @@ namespace Hydrology.DataMgr
         }
 
 
-        public String SendReadMsg(string id, string stationID, IList<EDownParam> cmds, EChannelType ctype)
+        public String SendReadMsg(string id, string stationID, IList<EDownParamGY> cmds, EChannelType ctype)
         {
             string query = string.Empty;
-            if (EChannelType.GPRS == ctype)
-            {
-                query = SendGprsRead(id, stationID, cmds);
-            }
+            //if (EChannelType.GPRS == ctype)
+            //{
+            //    query = SendGprsRead(id, stationID, cmds);
+            //}
             if (EChannelType.TCP == ctype)
             {
                 query = SendTcpRead(id, stationID, cmds);
             }
-            else if (EChannelType.GSM == ctype)
-            {
-                query = SendGsmRead(id, stationID, cmds);
-            }
+            //else if (EChannelType.GSM == ctype)
+            //{
+            //    query = SendGsmRead(id, stationID, cmds);
+            //}
             return query;
         }
 
@@ -941,7 +941,7 @@ namespace Hydrology.DataMgr
             return query;
         }
 
-        public String SendTcpRead(string userid, string stationID, IList<EDownParam> cmds)
+        public String SendTcpRead(string userid, string stationID, IList<EDownParamGY> cmds)
         {
             string query = string.Empty;
             var tcp = FindTcpByUserid(stationID);
@@ -952,7 +952,7 @@ namespace Hydrology.DataMgr
                 {
                     //TODO
                     query = tcp.Down.BuildQuery(stationID, cmds, EChannelType.TCP);
-                    tcp.SendData(stationID, "123");
+                    tcp.SendData(stationID, query);
                 }
                 //1109
                 else
@@ -2115,6 +2115,12 @@ namespace Hydrology.DataMgr
                         //itransoaren.SerialPortStateChanged += CProtocolEventManager.SerialPortStateChanged;
                         //itransoaren.SoilDataReceived += CProtocolEventManager.SoilDataReceived;
                         itransoaren.Init();
+                        var iup = ProtocolManager.Up(dataInfoDll);
+                        var idown = ProtocolManager.Down(dataInfoDll);
+                        var iudisk = ProtocolManager.UDisk(dataInfoDll);
+                        var iflash = ProtocolManager.Flash(dataInfoDll);
+                        var iSoil = ProtocolManager.Soil(dataInfoDll);
+                        itransoaren.InitInterface(iup, idown, iudisk, iflash, iSoil);
                         bool isStarted = itransoaren.DSStartService((ushort)port.PortNumber);
                         if (isStarted)
                         {

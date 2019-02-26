@@ -1,4 +1,5 @@
 ﻿using Hydrology.Entity;
+using Protocol.Data.Interface;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -55,5 +56,6 @@ namespace Protocol.Channel.Interface
         string getSessionIdbyStationid(string stationId);
         bool SendData(string stationId, string datagram);
         Hashtable ClientSessionTable { get; }
+        void InitInterface(IUp up, IDown down, IUBatch udisk, IFlashBatch flash, ISoil soil);
     }
 }

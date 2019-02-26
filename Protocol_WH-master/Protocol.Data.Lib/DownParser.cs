@@ -9,6 +9,11 @@ namespace Protocol.Data.Lib
 {
     public class DownParser : IDown
     {
+        public string BuildQuery(string sid, IList<EDownParamGY> cmds, EChannelType ctype)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// 读取指令设置
         /// </summary>
