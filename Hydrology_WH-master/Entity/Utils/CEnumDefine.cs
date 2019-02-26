@@ -240,10 +240,12 @@ namespace Hydrology.Entity
         private static readonly string CS_EMessageType_ETimed_DBStr = "8";
         private static readonly string CS_EMessageType_EAdditional_DBStr = "9";
         private static readonly string CS_EMessageType_Manual_DBStr = "6";
+        private static readonly string CS_EMessageType_EHourd_DBStr = "7";
         private static readonly string CS_EMessageType_Batch_UIStr = "批量";
         private static readonly string CS_EMessageType_EDTimed_UIStr = "定时报";
         private static readonly string CS_EMessageType_EAdditional_UIStr = "加报";
         private static readonly string CS_EMessageType_Manual_UIStr = "人工报";
+        private static readonly string CS_EMessageType_EHourd_UIStr = "小时报";
         public static string MessageTypeToDBStr(EMessageType type)
         {
             string result = "";
@@ -253,19 +255,21 @@ namespace Hydrology.Entity
                 case EMessageType.ETimed: { result = CS_EMessageType_ETimed_DBStr; } break;
                 case EMessageType.EAdditional: { result = CS_EMessageType_EAdditional_DBStr; } break;
                 case EMessageType.Manual: { result = CS_EMessageType_Manual_DBStr; } break;
+                case EMessageType.EHour: { result = CS_EMessageType_EHourd_DBStr; } break;
             }
             return result;
         }
 
         public static string MessageTypeToUIStr(EMessageType type)
         {
-            string result = "";
+            string result = "未知报文类型";
             switch (type)
             {
                 case EMessageType.Batch: { result = CS_EMessageType_Batch_UIStr; } break;
                 case EMessageType.ETimed: { result = CS_EMessageType_EDTimed_UIStr; } break;
                 case EMessageType.EAdditional: { result = CS_EMessageType_EAdditional_UIStr; } break;
                 case EMessageType.Manual: { result = CS_EMessageType_Manual_UIStr; } break;
+                case EMessageType.EHour: { result = CS_EMessageType_EHourd_UIStr; } break;
             }
             return result;
         }
@@ -279,6 +283,10 @@ namespace Hydrology.Entity
             else if (type.Equals(CS_EMessageType_ETimed_DBStr))
             {
                 return EMessageType.ETimed;
+            }
+            else if (type.Equals(CS_EMessageType_EHourd_DBStr))
+            {
+                return EMessageType.EHour;
             }
             else if (type.Equals(CS_EMessageType_Batch_DBStr))
             {
@@ -308,6 +316,10 @@ namespace Hydrology.Entity
             else if (str.Equals(CS_EMessageType_Manual_UIStr))
             {
                 return EMessageType.Manual;
+            }
+            else if (str.Equals(CS_EMessageType_EHourd_UIStr))
+            {
+                return EMessageType.EHour;
             }
 
             throw new Exception("UIStrToMesssageType ERROR");

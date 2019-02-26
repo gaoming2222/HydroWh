@@ -467,8 +467,13 @@ namespace Hydrology.Forms
                     //  更新已经上线的GPRS号码
                     foreach (var dtu in dtuList)
                     {
-                        var stationName = QueryStationNameByUserID(dtu);
-                        var stationID = QueryStationIDByUserID(dtu);
+                        string stationId = dtu.m_modemId.ToString();
+                        for(int i = 10; i > stationId.Length; i--)
+                        {
+                            stationId = "0" + stationId;
+                        }
+                        string  stationName = QueryStationNameByID(stationId);
+                        string  stationID = stationId;
                         var port = portValue;
                         if (stationName != "---")
                         {
@@ -527,9 +532,14 @@ namespace Hydrology.Forms
                             //  更新已经上线的GPRS号码
                             foreach (var dtu in dtuList)
                             {
-                                var stationName = QueryStationNameByUserID(dtu);
-                                var stationID = QueryStationIDByUserID(dtu);
-                                var port = QuerySubcenterNameByUserID(dtu);
+                                string stationId = dtu.m_modemId.ToString();
+                                for (int i = 10; i >= stationId.Length; i--)
+                                {
+                                    stationId = "0" + stationId;
+                                }
+                                string stationName = QueryStationNameByID(stationId);
+                                string stationID = stationId;
+                                var port = QuerySubcenterNameByID(stationId);
                                 if (stationName != "---")
                                 {
                                     dgvDTUList.RefreshGPRSInfo(port, stationName, stationID, dtu);
@@ -658,6 +668,34 @@ namespace Hydrology.Forms
             }
             return "---";
         }
+
+        //通过站点ID查询站名
+        private string QueryStationNameByID(string stationId)
+        {
+            
+            if (this.m_listStations != null)
+            {
+                foreach (var station in this.m_listStations)
+                {
+                    if (station.StationID == stationId)
+                    {
+                        return station.StationName;
+                    }
+                }
+
+            }
+            if (this.m_listSoilStations != null)
+            {
+                foreach (var station in this.m_listSoilStations)
+                {
+                    if (station.StationID == stationId)
+                    {
+                        return station.StationName;
+                    }
+                }
+            }
+            return "---";
+        }
         //20181010 gm 通过ID查询分中心名称
         private string QuerySubcenterNameByUserID(ModemInfoStruct dtu)
         {
@@ -689,6 +727,50 @@ namespace Hydrology.Forms
             if(subcenterid != null && subcenterid.Length > 0)
             {
                 if(m_listSubcenters != null)
+                {
+                    foreach (var subcenter in this.m_listSubcenters)
+                    {
+                        if (subcenter.SubCenterID.ToString().Trim() == subcenterid.Trim())
+                        {
+                            return subcenter.SubCenterName.ToString();
+                        }
+                    }
+                }
+            }
+            return "---";
+        }
+
+        //20181010 gm 通过站点ID查询分中心名称
+        private string QuerySubcenterNameByID(string stationId)
+        {
+            String subcenterid = null;
+            
+            if (this.m_listStations != null)
+            {
+                foreach (var station in this.m_listStations)
+                {
+                    if (station.StationID == stationId)
+                    {
+                        subcenterid = station.SubCenterID.ToString();
+                        break;
+                    }
+                }
+
+            }
+            if (this.m_listSoilStations != null)
+            {
+                foreach (var station in this.m_listSoilStations)
+                {
+                    if (station.StationID == stationId)
+                    {
+                        subcenterid = station.SubCenterID.ToString();
+                        break;
+                    }
+                }
+            }
+            if (subcenterid != null && subcenterid.Length > 0)
+            {
+                if (m_listSubcenters != null)
                 {
                     foreach (var subcenter in this.m_listSubcenters)
                     {

@@ -2417,7 +2417,7 @@ namespace Hydrology.DataMgr
                             continue;
                         }
 
-                        if (data.TotalRain < 0 || data.DiffRain == null || data.DiffRain < 0)
+                        if (data.TotalRain < 0 && data.DiffRain == null && data.DiffRain < 0)
                         {
                             continue;
                         }
@@ -2434,7 +2434,7 @@ namespace Hydrology.DataMgr
                         int hour = data.DataTime.Hour;
                         int minute = data.DataTime.Minute;
                         int second = data.DataTime.Second;
-                        if (data.TotalRain.HasValue)
+                        if (data.TotalRain.HasValue && data.TotalRain  > 0)
                         {
                             CalDifferenceRain(1, data.TotalRain.Value, data.DataTime, station.LastTotalRain, station.DRainChange, ref status, ref tmpDifferenceRain);
                             station.LastTotalRain = data.TotalRain.Value * 1;
@@ -2445,7 +2445,7 @@ namespace Hydrology.DataMgr
                         }
 
                         station.LastDataTime = data.DataTime;
-                        if (data.TotalRain.ToString() != "")
+                        if (data.TotalRain.ToString() != "" && data.TotalRain.HasValue && data.TotalRain >= 0)
                         {
                             if (hour == 8 && minute == 0 && second == 0)
                             {
@@ -2469,7 +2469,7 @@ namespace Hydrology.DataMgr
                             if ((minute + second) == 0)
                             {
                                 //station.LastClockSharpTotalRain = m_proxyRain.GetLastClockSharpTotalRain(station.StationID, data.DataTime);
-                                if (data.TotalRain.HasValue)
+                                if (data.TotalRain.HasValue && data.TotalRain > 0)
                                 {
                                     CalPeriodRain(station.StationID, station.DRainAccuracy, data.TotalRain.Value, data.DataTime, station.LastDataTime, station.LastClockSharpTotalRain, station.LastClockSharpTime, ref tmpPeriodRain, ref status);
                                 }
@@ -2489,7 +2489,7 @@ namespace Hydrology.DataMgr
                         rain.TimeRecieved = args.RecvDataTime;
                         rain.PeriodRain = (data.DataTime.Minute == 0 && data.DataTime.Second == 0) ? tmpPeriodRain : null;
                         rain.DayRain = (data.DataTime.Hour == 8 && data.DataTime.Minute == 0) ? tmpDayRain : null;
-                        if(data.DiffRain != null && data.DiffRain > 0)
+                        if(data.DiffRain != null && data.DiffRain >= 0)
                         {
                             rain.DifferneceRain = data.DiffRain;
                         }
@@ -2497,13 +2497,14 @@ namespace Hydrology.DataMgr
                         {
                             rain.DifferneceRain = tmpDifferenceRain;
                         }
-                        
-                        rain.TotalRain = data.TotalRain * 1;
+                        if(data.TotalRain.HasValue && data.TotalRain > 0)
+                        {
+                            rain.TotalRain = data.TotalRain * 1;
+                        }
                         rain.MessageType = args.EMessageType;
                         rain.ChannelType = args.EChannelType;
                         AssertAndAdjustRainData(rain, ref tmpRTDRainDataState);
                         rain.DifferneceRain = rain.DifferneceRain.HasValue ? (rain.DifferneceRain < 0 ? 0 : rain.DifferneceRain) : null;
-                        rain.TotalRain = rain.TotalRain.HasValue ? (rain.TotalRain < 0 ? 0 : rain.TotalRain) : null;
                         rain.DayRain = rain.DayRain.HasValue ? (rain.DayRain < 0 ? 0 : rain.DayRain) : null;
                         rain.PeriodRain = rain.PeriodRain.HasValue ? (rain.PeriodRain < 0 ? 0 : rain.PeriodRain) : null;
                         rains.Add(rain);
@@ -2535,7 +2536,7 @@ namespace Hydrology.DataMgr
                             continue;
                         }
 
-                        if (data.WaterStage == -200)
+                        if (data.WaterStage <= -200)
                         {
                             continue;
                         }

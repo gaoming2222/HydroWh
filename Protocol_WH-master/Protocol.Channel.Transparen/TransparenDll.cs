@@ -653,6 +653,7 @@ namespace Protocol.Channel.Transparen
             for (int i = 0; i < m_listStations.Count; i++)
             {
                 TransparentHelper transparent = new TransparentHelper();
+                transparent.stationId = m_listStations[i].StationID;
                 transparent.gprsId = m_listStations[i].GPRS;
                 transparent.gsmNum = m_listStations[i].GSM;
                 transparent.beidouNum = m_listStations[i].BDSatellite;
@@ -941,10 +942,10 @@ namespace Protocol.Channel.Transparen
             {
                 string[] messageList = Regex.Split(messageStr, "\u0001", RegexOptions.IgnoreCase);
                 string data1 = messageList[0];
-                gprsid = data1.Substring(4, 8);
+                gprsid = data1.Substring(2, 10);
                 foreach(TransparentHelper transparent in m_listTransparents)
                 {
-                    if(transparent.gprsId == gprsid)
+                    if(transparent.stationId == gprsid)
                     {
                         transparent.ip = ip;
                         transparent.sessionId = sessionId.ToString();
@@ -1006,10 +1007,10 @@ namespace Protocol.Channel.Transparen
                 string[] messageList = Regex.Split(messageStr, "\u0001", RegexOptions.IgnoreCase);
                 if (messageList == null || messageList.Length <= 1) { return; }
                 data1 = messageList[1];
-                gprsid = data1.Substring(4, 8);
+                gprsid = data1.Substring(2, 10);
                 foreach (TransparentHelper transparent in m_listTransparents)
                 {
-                    if (transparent.gprsId == gprsid)
+                    if (transparent.stationId == gprsid)
                     {
                         transparent.ip = ip;
                         transparent.sessionId = sessionId.ToString();
@@ -1418,7 +1419,10 @@ namespace Protocol.Channel.Transparen
                     {
                         if(transparent.sessionId == session.ID.ToString())
                         {
-                            dtu.m_modemId = uint.Parse(transparent.gprsId);
+                            
+                            
+                            dtu.m_modemId = uint.Parse(transparent.stationId);
+                            //string a = transparent.stationId;
                         }
                     }
                     dtu.m_dynip = System.Text.Encoding.Default.GetBytes(session.IP);

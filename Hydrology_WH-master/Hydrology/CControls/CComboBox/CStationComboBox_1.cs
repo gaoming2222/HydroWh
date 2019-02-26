@@ -125,8 +125,12 @@ namespace Hydrology.CControls
             //this.Items.Add(m_listBoxStation.SelectedItem);
             //this.SelectedIndex = 0;
             this.Text = m_listBoxStation.SelectedItem.ToString();
+            string[] idName = m_listBoxStation.SelectedItem.ToString().Split('|');
+
             // 匹配当前的站点赋值
-            string stationId = this.Text.Substring(1, 4);
+            string stationId = idName[0].Trim();
+            stationId = stationId.Substring(1);
+
             for (int i = 0; i < m_listStations.Count; ++i)
             {
                 if (stationId == m_listStations[i].StationID)
